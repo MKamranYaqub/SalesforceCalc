@@ -1,0 +1,116 @@
+<template>
+  <lightning-card title="Loan Calculator" icon-name="utility:formula">
+    <div class="slds-p-around_medium slds-grid slds-wrap slds-gutters">
+      <!-- Left column: Inputs -->
+      <div class="slds-col slds-size_1-of-1 slds-large-size_1-of-2">
+        <div class="slds-scope">
+          <lightning-input
+            type="number"
+            name="propertyValue"
+            label="Property Value (£)"
+            value={propertyValue}
+            step="0.01"
+            min="0"
+            onchange={handleNumberChange}>
+          </lightning-input>
+
+          <lightning-input
+            type="number"
+            name="specificNetLoan"
+            label="Specific Net Loan (£)"
+            value={specificNetLoan}
+            step="0.01"
+            min="0"
+            onchange={handleNumberChange}>
+          </lightning-input>
+
+          <lightning-input
+            type="number"
+            name="arrangementFeePct"
+            label="Arrangement Fee (%)"
+            value={arrangementFeePct}
+            step="0.01"
+            min="0"
+            onchange={handleNumberChange}>
+          </lightning-input>
+
+          <lightning-input
+            type="number"
+            name="payRateMonthly"
+            label="Pay Rate (monthly, e.g. 0.90 = 0.90%)"
+            value={payRateMonthly}
+            step="0.0001"
+            min="0"
+            onchange={handleNumberChange}>
+          </lightning-input>
+
+          <lightning-input
+            type="number"
+            name="deferredInterestMonthly"
+            label="Deferred Interest (monthly, e.g. 0.50 = 0.50%)"
+            value={deferredInterestMonthly}
+            step="0.0001"
+            min="0"
+            onchange={handleNumberChange}>
+          </lightning-input>
+
+          <lightning-combobox
+            name="termMonths"
+            label="Term (months)"
+            value={termMonths}
+            options={termOptions}
+            onchange={handlePicklistChange}>
+          </lightning-combobox>
+
+          <lightning-slider
+            label="Rolled Months"
+            value={rolledMonths}
+            min="0"
+            max={termMonths}
+            step="1"
+            onchange={handleSliderChange}>
+          </lightning-slider>
+
+          <lightning-input
+            type="number"
+            name="bbr"
+            label="Base Rate (annual, e.g. 4.25 = 4.25%)"
+            value={bbr}
+            step="0.01"
+            min="0"
+            onchange={handleNumberChange}>
+          </lightning-input>
+        </div>
+      </div>
+
+      <!-- Right column: Outputs -->
+      <div class="slds-col slds-size_1-of-1 slds-large-size_1-of-2">
+        <article class="slds-card__body slds-card__body_inner">
+          <div class="stat">
+            <div class="stat__label">Back-Calculated Gross Loan</div>
+            <div class="stat__value" data-testid="grossLoan">{grossLoanFormatted}</div>
+          </div>
+
+          <div class="slds-m-top_medium slds-grid slds-wrap slds-gutters">
+            <div class="slds-col slds-size_1-of-2">
+              <div class="stat stat--small">
+                <div class="stat__label">Gross LTV</div>
+                <div class="stat__value">{grossLtvFormatted}</div>
+              </div>
+            </div>
+            <div class="slds-col slds-size_1-of-2">
+              <div class="stat stat--small">
+                <div class="stat__label">Fees (Estimate)</div>
+                <div class="stat__value">{feesFormatted}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="slds-m-top_small slds-text-color_weak slds-text-body_small">
+            Formula: Gross = Net / (1 − ArrangementFee − (DeferredInterest/12 × Term) − (PayRate × RolledMonths))
+          </div>
+        </article>
+      </div>
+    </div>
+  </lightning-card>
+</template>
