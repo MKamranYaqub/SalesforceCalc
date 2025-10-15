@@ -14,6 +14,7 @@ import { SummarySection } from './components/SummarySection';
 import { MatrixSection } from './components/MatrixSection';
 import { BasicGrossSection } from './components/BasicGrossSection';
 import { ProductGroupToggle } from './components/ProductGroupToggle';
+import { EmailResultsModal } from './components/EmailResultsModal';
 import { parseNumber, formatCurrency } from './utils/formatters';
 import { selectRateSource, getFeeColumns, getMaxLTV } from './utils/rateSelectors';
 import { computeColumnData } from './utils/calculationEngine';
@@ -357,17 +358,8 @@ function App() {
             feeOverrides={feeOverrides}
             limits={limits}
           />
-          
         </>
-        
       )}
-
-      // 1. Add import at the top
-import { EmailResultsModal } from './components/EmailResultsModal';
-
-// 2. Add state hook after other useState declarations
-const [showEmailModal, setShowEmailModal] = useState(false);
-
 
       {/* Email Results Button */}
       {canShowMatrix && bestSummary && (
@@ -388,7 +380,10 @@ const [showEmailModal, setShowEmailModal] = useState(false);
             justifyContent: "center",
             gap: "8px",
             marginTop: "16px",
+            transition: "all 0.2s ease",
           }}
+          onMouseOver={(e) => e.target.style.background = "#006b73"}
+          onMouseOut={(e) => e.target.style.background = "#008891"}
         >
           📧 Email Results
         </button>
@@ -412,6 +407,5 @@ const [showEmailModal, setShowEmailModal] = useState(false);
     </div>
   );
 }
-
 
 export default App;
