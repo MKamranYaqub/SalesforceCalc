@@ -29,7 +29,7 @@ export const CRITERIA_CONFIG = {
         },
         {
           key: "flatAboveComm",
-          label: "Flat above commercial?",
+          label: "Flat Above Commercial?",
           options: [
             { label: "No", tier: 1 },
             { label: "Yes", tier: 2 },
@@ -65,7 +65,7 @@ export const CRITERIA_CONFIG = {
         },
         {
           key: "offshore",
-          label: "Offshore company?",
+          label: "Offshore Company?",
           options: [
             { label: "No", tier: 1 },
             { label: "Yes", tier: 3 },
@@ -73,7 +73,7 @@ export const CRITERIA_CONFIG = {
         },
         {
           key: "mortgageArrears",
-          label: "Mortgage Arrears (in last 24 months)",
+          label: "Mortgage Arrears",
           options: [
             { label: "No", tier: 1 },
             { label: "0 in 24", tier: 1 },
@@ -83,7 +83,7 @@ export const CRITERIA_CONFIG = {
         },
         {
           key: "unsecuredArrears",
-          label: "Unsecured Arrears (in last 24 months)",
+          label: "Unsecured Arrears",
           options: [
             { label: "No", tier: 1 },
             { label: "0 in 24", tier: 1 },
@@ -93,7 +93,7 @@ export const CRITERIA_CONFIG = {
         },
         {
           key: "ccjDefault",
-          label: "CCJ & Default (last 24 months)",
+          label: "CCJ & Default",
           helper: "Ignore <£350, telecom, utility",
           options: [
             { label: "No", tier: 1 },
@@ -392,7 +392,7 @@ export const CRITERIA_CONFIG = {
         },
         {
           key: "mortgageArrears",
-          label: "Mortgage Arrears (in last 24 months)",
+          label: "Mortgage Arrears ",
           options: [
             { label: "No", tier: 1 },
             { label: "0 in 24", tier: 1 },
@@ -401,7 +401,7 @@ export const CRITERIA_CONFIG = {
         },
         {
           key: "unsecuredArrears",
-          label: "Unsecured Arrears (in last 24 months)",
+          label: "Unsecured Arrears ",
           options: [
             { label: "No", tier: 1 },
             { label: "0 in 24", tier: 1 },

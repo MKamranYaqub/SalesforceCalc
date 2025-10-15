@@ -1,5 +1,5 @@
 /**
- * Matrix section component displaying loan calculations
+ * Matrix section component displaying loan calculations with ICR
  */
 import React from 'react';
 import { formatCurrency, formatPercentage } from '../utils/formatters';
@@ -11,6 +11,7 @@ const MATRIX_LABELS = [
   { key: "fullRate", label: "Full Rate (Editable)" },
   { key: "productFeePct", label: "Product Fee %" },
   { key: "payRate", label: "Pay Rate" },
+  { key: "icr", label: "ICR (Interest Coverage Ratio)" },
   {
     key: "netLoan",
     label: (
@@ -183,6 +184,12 @@ export const MatrixSection = ({
 
       case "payRate":
         return data.payRateText;
+      
+      case "icr":
+        if (!data.icr) return "—";
+        const icrValue = data.icr.toFixed(2);
+        const icrPercent = (data.icr * 100).toFixed(0);
+        return `${icrPercent}%`;
       
       case "netLoan":
         return (
