@@ -1,4 +1,3 @@
-
 export const LOAN_TYPES = {
   MAX_OPTIMUM_GROSS: "Max Optimum Gross Loan",
   SPECIFIC_NET: "Specific Net Loan",
@@ -38,10 +37,11 @@ export const PRODUCT_TYPES_LIST = {
 export const FEE_COLUMNS = {
   Residential: [6, 4, 3, 2],
   Commercial: [6, 4, 2],
+  "Semi-Commercial": [6, 4, 2],
   RetentionResidential: [5.5, 3.5, 2.5, 1.5],
   RetentionCommercial: [5.5, 3.5, 1.5],
+  "RetentionSemi-Commercial": [5.5, 3.5, 1.5],
   Core: [6, 4, 3, 2],
   Core_Retention_65: [5.5, 3.5, 2.5, 1.5],
   Core_Retention_75: [5.5, 3.5, 2.5, 1.5],
 };
-

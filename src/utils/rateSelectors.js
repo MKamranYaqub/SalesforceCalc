@@ -5,6 +5,7 @@ import { PROPERTY_TYPES, PRODUCT_GROUPS, CORE_FLOOR_RATE, FEE_COLUMNS } from '..
 import {
   RATES_DATA,
   RATES_COMMERCIAL,
+  RATES_SEMI_COMMERCIAL,
   RATES_CORE,
   RATES_RETENTION_65,
   RATES_RETENTION_75,
@@ -46,9 +47,10 @@ export const getMaxLTV = (params) => {
  */
 export const selectRateSource = (params) => {
   const { propertyType, productGroup, isRetention, retentionLtv, tier, productType } = params;
-  const isCommercial = propertyType === PROPERTY_TYPES.COMMERCIAL || 
-                       propertyType === PROPERTY_TYPES.SEMI_COMMERCIAL;
+  const isCommercial = propertyType === PROPERTY_TYPES.COMMERCIAL;
+  const isSemiCommercial = propertyType === PROPERTY_TYPES.SEMI_COMMERCIAL;
 
+  // Core products (Residential only)
   if (productGroup === PRODUCT_GROUPS.CORE && propertyType === PROPERTY_TYPES.RESIDENTIAL) {
     if (isRetention === "Yes") {
       const coreRetRates = retentionLtv === "65" 
@@ -59,15 +61,26 @@ export const selectRateSource = (params) => {
     return RATES_CORE?.[tier]?.products?.[productType];
   }
 
+  // Retention products
   if (isRetention === "Yes") {
     const retentionRates = retentionLtv === "65" 
       ? RATES_RETENTION_65 
       : RATES_RETENTION_75;
-    return propertyType === PROPERTY_TYPES.RESIDENTIAL
-      ? retentionRates?.Residential?.[tier]?.products?.[productType]
-      : retentionRates?.Commercial?.[tier]?.products?.[productType];
+    
+    if (propertyType === PROPERTY_TYPES.RESIDENTIAL) {
+      return retentionRates?.Residential?.[tier]?.products?.[productType];
+    } else if (isSemiCommercial) {
+      return retentionRates?.["Semi-Commercial"]?.[tier]?.products?.[productType];
+    } else {
+      return retentionRates?.Commercial?.[tier]?.products?.[productType];
+    }
   }
 
+  // Standard products
+  if (isSemiCommercial) {
+    return RATES_SEMI_COMMERCIAL?.[tier]?.products?.[productType];
+  }
+  
   return isCommercial
     ? RATES_COMMERCIAL?.[tier]?.products?.[productType]
     : RATES_DATA?.[tier]?.products?.[productType];
@@ -79,6 +92,7 @@ export const selectRateSource = (params) => {
 export const getFeeColumns = (params) => {
   const { productGroup, isRetention, retentionLtv, propertyType } = params;
   
+  // Core products (Residential only)
   if (productGroup === PRODUCT_GROUPS.CORE && propertyType === PROPERTY_TYPES.RESIDENTIAL) {
     if (isRetention === "Yes") {
       return retentionLtv === "65" 
@@ -88,12 +102,18 @@ export const getFeeColumns = (params) => {
     return FEE_COLUMNS.Core;
   }
   
+  // Retention products
   if (isRetention === "Yes") {
-    return propertyType === PROPERTY_TYPES.RESIDENTIAL
-      ? FEE_COLUMNS.RetentionResidential
-      : FEE_COLUMNS.RetentionCommercial;
+    if (propertyType === PROPERTY_TYPES.RESIDENTIAL) {
+      return FEE_COLUMNS.RetentionResidential;
+    } else if (propertyType === PROPERTY_TYPES.SEMI_COMMERCIAL) {
+      return FEE_COLUMNS["RetentionSemi-Commercial"];
+    } else {
+      return FEE_COLUMNS.RetentionCommercial;
+    }
   }
   
+  // Standard products
   return FEE_COLUMNS[propertyType] || [6, 4, 3, 2];
 };
 
