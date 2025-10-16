@@ -34,3 +34,11 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📧 Email service configured with ${process.env.EMAIL_HOST}`);
 });
+
+// backend/server.js
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://your-production-domain.com' 
+    : 'http://localhost:3000',
+  credentials: true
+}));
