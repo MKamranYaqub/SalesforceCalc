@@ -1,6 +1,21 @@
 import { supabase } from '../config/supabase.js';
 
 /**
+ * Helper function to safely parse numeric values
+ */
+const parseNumeric = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    // Remove % and any other non-numeric characters except decimal point and minus
+    const cleaned = value.replace(/[^0-9.-]/g, '');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? null : parsed;
+  }
+  return null;
+};
+
+/**
  * Create a new case
  */
 export const createCase = async (caseData) => {
@@ -14,7 +29,7 @@ export const createCase = async (caseData) => {
       product_type: caseData.productType,
       product_group: caseData.productGroup,
       tier: caseData.tier,
-      is_retention: caseData.isRetention === 'Yes',
+      is_retention: caseData.isRetention === 'Yes' || caseData.isRetention === true,
       retention_ltv: caseData.retentionLtv ? parseInt(caseData.retentionLtv) : null,
       loan_type_required: caseData.loanTypeRequired,
       specific_net_loan: caseData.specificNetLoan,
@@ -41,25 +56,36 @@ export const createCase = async (caseData) => {
 };
 
 /**
- * Save case results
+ * Save case results - WITH PROPER NUMERIC PARSING
  */
 export const saveCaseResults = async (caseId, results) => {
-  const resultsData = results.map(result => ({
-    case_id: caseId,
-    fee_column: result.feeColumn,
-    gross_loan: result.grossLoan,
-    net_loan: result.netLoan,
-    ltv_percentage: result.ltvPercentage,
-    icr: result.icr,
-    full_rate: result.fullRate,
-    pay_rate: result.payRate,
-    rolled_months: result.rolledMonths,
-    deferred_rate: result.deferredRate,
-    product_fee: result.productFee,
-    rolled_interest: result.rolledInterest,
-    deferred_interest: result.deferredInterest,
-    direct_debit: result.directDebit
-  }));
+  console.log('💾 Saving case results for case:', caseId);
+  console.log('📊 Raw results:', results);
+
+  const resultsData = results.map((result, index) => {
+    // Parse ALL numeric fields properly
+    const parsed = {
+      case_id: caseId,
+      fee_column: parseNumeric(result.feeColumn),
+      gross_loan: parseNumeric(result.grossLoan),
+      net_loan: parseNumeric(result.netLoan),
+      ltv_percentage: parseNumeric(result.ltvPercentage),
+      icr: parseNumeric(result.icr),
+      full_rate: parseNumeric(result.fullRate),
+      pay_rate: result.payRate, // Keep as text - it's a display string like "5.76%" or "1.59% + BBR"
+      rolled_months: result.rolledMonths ? parseInt(result.rolledMonths) : null,
+      deferred_rate: parseNumeric(result.deferredRate),
+      product_fee: parseNumeric(result.productFee),
+      rolled_interest: parseNumeric(result.rolledInterest),
+      deferred_interest: parseNumeric(result.deferredInterest),
+      direct_debit: parseNumeric(result.directDebit)
+    };
+
+    console.log(`📋 Parsed result ${index + 1}:`, parsed);
+    return parsed;
+  });
+
+  console.log('✅ All results parsed, inserting to database...');
 
   const { error } = await supabase
     .from('case_results')
@@ -69,6 +95,8 @@ export const saveCaseResults = async (caseId, results) => {
     console.error('Error saving case results:', error);
     throw error;
   }
+
+  console.log('✅ Case results saved successfully');
 };
 
 /**

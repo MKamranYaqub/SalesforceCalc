@@ -5,8 +5,8 @@ import { useState } from 'react';
 import { LOAN_TYPES } from '../config/constants';
 
 export const useLoanInputs = () => {
-  const [propertyValue, setPropertyValue] = useState("1000000");
-  const [monthlyRent, setMonthlyRent] = useState("3000");
+  const [propertyValue, setPropertyValue] = useState("");
+  const [monthlyRent, setMonthlyRent] = useState("");
   const [specificNetLoan, setSpecificNetLoan] = useState("");
   const [specificGrossLoan, setSpecificGrossLoan] = useState("");
   const [loanTypeRequired, setLoanTypeRequired] = useState(LOAN_TYPES.MAX_OPTIMUM_GROSS);

@@ -1,5 +1,5 @@
 /**
- * Main application component with repositioned product group toggle
+ * Main application component with save/load functionality
  */
 import React, { useState, useMemo, useEffect } from 'react';
 import { useProductSelection } from './hooks/useProductSelection';
@@ -15,6 +15,8 @@ import { MatrixSection } from './components/MatrixSection';
 import { BasicGrossSection } from './components/BasicGrossSection';
 import { ProductGroupToggle } from './components/ProductGroupToggle';
 import { EmailResultsModal } from './components/EmailResultsModal';
+import { SaveCalculationButton } from './components/SaveCalculationButton';
+import { CaseLookup } from './components/CaseLookup';
 import { parseNumber, formatCurrency } from './utils/formatters';
 import { selectRateSource, getFeeColumns, getMaxLTV } from './utils/rateSelectors';
 import { computeColumnData } from './utils/calculationEngine';
@@ -24,6 +26,8 @@ import './styles/styles.css';
 
 function App() {
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [userAccessLevel] = useState('web_customer'); // Can be changed based on auth
+  
   const productSelection = useProductSelection();
   const {
     mainProductType,
@@ -241,8 +245,128 @@ function App() {
 
   const deferredCap = selected?.isMargin ? limits.MAX_DEFERRED_TRACKER : limits.MAX_DEFERRED_FIX;
 
+  // Prepare calculation data for saving
+  const calculationData = {
+    propertyValue: parseNumber(propertyValue),
+    monthlyRent: parseNumber(monthlyRent),
+    propertyType,
+    productType,
+    productGroup,
+    tier,
+    isRetention,
+    retentionLtv,
+    loanTypeRequired,
+    specificNetLoan: parseNumber(specificNetLoan),
+    specificGrossLoan: parseNumber(specificGrossLoan),
+    specificLTV,
+    procFeePct: effectiveProcFeePct,
+    brokerFeePct: brokerFeePct ? parseNumber(brokerFeePct) : null,
+    brokerFeeFlat: brokerFeeFlat ? parseNumber(brokerFeeFlat) : null,
+  };
+
+  // Handle case loaded from lookup
+  const handleCaseLoaded = (caseData) => {
+    console.log('📥 Loading case data:', caseData);
+    
+    // Use calculation_data if available, otherwise use root fields
+    const calc = caseData.calculation_data || caseData;
+    
+    // Load property and product settings
+    if (calc.propertyType || caseData.property_type) {
+      setPropertyType(calc.propertyType || caseData.property_type);
+    }
+    
+    if (calc.propertyValue || caseData.property_value) {
+      setPropertyValue(String(calc.propertyValue || caseData.property_value));
+    }
+    
+    if (calc.monthlyRent || caseData.monthly_rent) {
+      setMonthlyRent(String(calc.monthlyRent || caseData.monthly_rent));
+    }
+    
+    if (calc.productType || caseData.product_type) {
+      setProductType(calc.productType || caseData.product_type);
+    }
+    
+    if (calc.productGroup || caseData.product_group) {
+      setProductGroup(calc.productGroup || caseData.product_group);
+    }
+    
+    if (calc.tier || caseData.tier) {
+      // Tier will be recalculated from criteria, but we can set it temporarily
+    }
+    
+    // Load retention settings
+    const isRet = calc.isRetention === 'Yes' || calc.isRetention === true || caseData.is_retention === true;
+    setIsRetention(isRet ? 'Yes' : 'No');
+    
+    if (calc.retentionLtv || caseData.retention_ltv) {
+      setRetentionLtv(String(calc.retentionLtv || caseData.retention_ltv));
+    }
+    
+    // Load loan type
+    if (calc.loanTypeRequired || caseData.loan_type_required) {
+      setLoanTypeRequired(calc.loanTypeRequired || caseData.loan_type_required);
+    }
+    
+    // Load specific loan values
+    if (calc.specificNetLoan || caseData.specific_net_loan) {
+      const netLoan = calc.specificNetLoan || caseData.specific_net_loan;
+      if (netLoan && netLoan !== 0) {
+        setSpecificNetLoan(String(netLoan));
+      }
+    }
+    
+    if (calc.specificGrossLoan || caseData.specific_gross_loan) {
+      const grossLoan = calc.specificGrossLoan || caseData.specific_gross_loan;
+      if (grossLoan && grossLoan !== 0) {
+        setSpecificGrossLoan(String(grossLoan));
+      }
+    }
+    
+    if (calc.specificLTV || caseData.specific_ltv) {
+      const ltv = calc.specificLTV || caseData.specific_ltv;
+      if (ltv && ltv !== 0) {
+        setSpecificLTV(Number(ltv));
+      }
+    }
+    
+    // Load fees
+    if (calc.procFeePct || caseData.proc_fee_pct) {
+      setProcFeePctInput(String(calc.procFeePct || caseData.proc_fee_pct));
+    }
+    
+    if (calc.brokerFeePct || caseData.broker_fee_pct) {
+      setBrokerFeePct(String(calc.brokerFeePct || caseData.broker_fee_pct));
+    }
+    
+    if (calc.brokerFeeFlat || caseData.broker_fee_flat) {
+      setBrokerFeeFlat(String(calc.brokerFeeFlat || caseData.broker_fee_flat));
+    }
+    
+    // Load criteria if available
+    if (calc.criteria) {
+      console.log('📋 Loading criteria:', calc.criteria);
+      setCriteria(calc.criteria);
+    }
+    
+    console.log('✅ Case data loaded into form');
+    
+    // Show success message
+    setTimeout(() => {
+      alert(`✅ Case ${caseData.case_reference} loaded successfully!\n\n` +
+            `Property: £${(calc.propertyValue || caseData.property_value)?.toLocaleString()}\n` +
+            `Rent: £${(calc.monthlyRent || caseData.monthly_rent)?.toLocaleString()}\n` +
+            `Product: ${calc.productType || caseData.product_type}\n` +
+            `Group: ${calc.productGroup || caseData.product_group}`);
+    }, 100);
+  };
+
   return (
     <div className="app-container">
+      {/* Case Lookup Section */}
+      <CaseLookup onCaseLoaded={handleCaseLoaded} />
+
       <ProductSetup
         mainProductType={mainProductType}
         setMainProductType={setMainProductType}
@@ -305,7 +429,6 @@ function App() {
         tier={tier}
       />
 
-      {/* PRODUCT GROUP TOGGLE - Now positioned above matrix */}
       {canShowMatrix && propertyType === PROPERTY_TYPES.RESIDENTIAL && (
         <ProductGroupToggle
           productGroup={productGroup}
@@ -361,47 +484,50 @@ function App() {
         </>
       )}
 
-      {/* Email Results Button */}
+      {/* Action Buttons */}
       {canShowMatrix && bestSummary && (
-        <button
-          onClick={() => setShowEmailModal(true)}
-          style={{
-            gridColumn: "1 / -1",
-            padding: "16px 32px",
-            background: "#008891",
-            color: "#fff",
-            border: "none",
-            borderRadius: "8px",
-            fontSize: "16px",
-            fontWeight: 600,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            marginTop: "16px",
-            transition: "all 0.2s ease",
-          }}
-          onMouseOver={(e) => e.target.style.background = "#006b73"}
-          onMouseOut={(e) => e.target.style.background = "#008891"}
-        >
-          📧 Email Results
-        </button>
+        <>
+          {/* Save Calculation Button */}
+          <SaveCalculationButton
+            calculationData={calculationData}
+            allColumnData={allColumnData}
+            bestSummary={bestSummary}
+            userAccessLevel={userAccessLevel}
+            criteria={criteria}
+          />
+
+          {/* Email Results Button */}
+          <button
+            onClick={() => setShowEmailModal(true)}
+            style={{
+              gridColumn: "1 / -1",
+              padding: "16px 32px",
+              background: "#008891",
+              color: "#fff",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "16px",
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              transition: "all 0.2s ease",
+            }}
+            onMouseOver={(e) => e.target.style.background = "#006b73"}
+            onMouseOut={(e) => e.target.style.background = "#008891"}
+          >
+            📧 Email Results
+          </button>
+        </>
       )}
 
       {/* Email Modal */}
       <EmailResultsModal
         isOpen={showEmailModal}
         onClose={() => setShowEmailModal(false)}
-        calculationData={{
-          propertyValue: parseNumber(propertyValue),
-          monthlyRent: parseNumber(monthlyRent),
-          productType,
-          tier,
-          propertyType,
-          productGroup,
-          isRetention,
-        }}
+        calculationData={calculationData}
         allColumnData={allColumnData}
       />
     </div>
