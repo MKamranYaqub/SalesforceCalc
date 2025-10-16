@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export const CaseLookup = ({ onCaseLoaded }) => {
+export const CaseLookup = ({ onCaseLoaded, onNewCalculation }) => {
   const [reference, setReference] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

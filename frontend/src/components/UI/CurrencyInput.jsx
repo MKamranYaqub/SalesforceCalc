@@ -1,7 +1,7 @@
 /**
  * Currency input component with thousand separators
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
 export const CurrencyInput = ({ 
@@ -16,6 +16,11 @@ export const CurrencyInput = ({
   max,
 }) => {
   const [displayValue, setDisplayValue] = useState(formatDisplay(value));
+
+  // Update display value when prop value changes (for case loading)
+  useEffect(() => {
+    setDisplayValue(formatDisplay(value));
+  }, [value]);
 
   function formatDisplay(val) {
     if (!val || val === '') return '';

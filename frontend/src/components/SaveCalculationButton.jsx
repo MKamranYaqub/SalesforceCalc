@@ -6,12 +6,16 @@ export const SaveCalculationButton = ({
   allColumnData, 
   bestSummary,
   userAccessLevel,
-  criteria 
+  criteria,
+  existingCaseReference,
+  onSaved
 }) => {
   const [saving, setSaving] = useState(false);
   const [savedReference, setSavedReference] = useState(null);
   const [error, setError] = useState(null);
-
+const isUpdate = !!existingCaseReference;
+  const buttonText = isUpdate ? 'Update Calculation' : 'Save Calculation';
+  const buttonIcon = isUpdate ? '🔄' : '💾';
   const handleSave = async () => {
     console.log('🔵 Save button clicked');
     setSaving(true);

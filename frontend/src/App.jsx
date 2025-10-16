@@ -27,7 +27,7 @@ import './styles/styles.css';
 function App() {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [userAccessLevel] = useState('web_customer'); // Can be changed based on auth
-  
+   const [loadedCaseReference, setLoadedCaseReference] = useState(null); // Track loaded case
   const productSelection = useProductSelection();
   const {
     mainProductType,

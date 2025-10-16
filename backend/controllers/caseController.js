@@ -1,3 +1,4 @@
+import { supabase } from '../config/supabase.js';
 import { createCase, saveCaseResults, getCaseByReference, updateCase } from '../services/caseService.js';
 
 /**
@@ -196,6 +197,121 @@ export const updateCaseStatus = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to update case',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Update an existing case
+ */
+export const updateCalculation = async (req, res) => {
+  try {
+    const { reference } = req.params;
+    const { 
+      userAccessLevel,
+      calculationData, 
+      results,
+      bestSummary 
+    } = req.body;
+
+    console.log('🔄 Updating case:', reference);
+
+    // Get existing case
+    const existingCase = await getCaseByReference(reference);
+    
+    if (!existingCase) {
+      return res.status(404).json({
+        success: false,
+        message: 'Case not found'
+      });
+    }
+
+    // Parse all numeric fields (same as create)
+    const updateData = {
+      userAccessLevel: userAccessLevel || existingCase.user_access_level,
+      property_value: parseNumeric(calculationData.propertyValue),
+      monthly_rent: parseNumeric(calculationData.monthlyRent),
+      property_type: calculationData.propertyType,
+      product_type: calculationData.productType,
+      product_group: calculationData.productGroup,
+      tier: calculationData.tier,
+      is_retention: calculationData.isRetention === 'Yes',
+      retention_ltv: calculationData.retentionLtv ? parseInt(calculationData.retentionLtv) : null,
+      loan_type_required: calculationData.loanTypeRequired,
+      specific_net_loan: parseNumeric(calculationData.specificNetLoan),
+      specific_gross_loan: parseNumeric(calculationData.specificGrossLoan),
+      specific_ltv: parseNumeric(calculationData.specificLTV),
+      proc_fee_pct: parseNumeric(calculationData.procFeePct),
+      broker_fee_pct: parseNumeric(calculationData.brokerFeePct),
+      broker_fee_flat: parseNumeric(calculationData.brokerFeeFlat),
+      calculation_data: calculationData,
+      best_gross_loan: bestSummary?.gross ? parseNumeric(bestSummary.gross) : null,
+      best_net_loan: bestSummary?.net ? parseNumeric(bestSummary.net) : null,
+      best_fee_column: bestSummary?.colKey ? parseNumeric(bestSummary.colKey) : null
+    };
+
+    console.log('📋 Update data:', updateData);
+
+    // Update the case
+    const { data: updatedCase, error: updateError } = await supabase
+      .from('cases')
+      .update(updateData)
+      .eq('id', existingCase.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating case:', updateError);
+      throw updateError;
+    }
+
+    console.log('✅ Case updated:', reference);
+
+    // Delete old results
+    const { error: deleteError } = await supabase
+      .from('case_results')
+      .delete()
+      .eq('case_id', existingCase.id);
+
+    if (deleteError) {
+      console.error('Error deleting old results:', deleteError);
+    }
+
+    // Save new results if provided
+    if (results && results.length > 0) {
+      const formattedResults = results.map(r => ({
+        case_id: existingCase.id,
+        fee_column: parseNumeric(r.colKey),
+        gross_loan: parseNumeric(r.gross),
+        net_loan: parseNumeric(r.net),
+        ltv_percentage: r.ltv ? parseNumeric(r.ltv) * 100 : null,
+        icr: parseNumeric(r.icr),
+        full_rate: parseNumeric(r.actualRateUsed),
+        pay_rate: r.payRateText,
+        rolled_months: r.rolledMonths ? parseInt(r.rolledMonths) : null,
+        deferred_rate: parseNumeric(r.deferredCapPct),
+        product_fee: parseNumeric(r.feeAmt),
+        rolled_interest: parseNumeric(r.rolled),
+        deferred_interest: parseNumeric(r.deferred),
+        direct_debit: parseNumeric(r.directDebit)
+      }));
+
+      console.log('💾 Saving updated results:', formattedResults.length);
+      await saveCaseResults(existingCase.id, formattedResults);
+      console.log('✅ Results updated');
+    }
+
+    res.json({
+      success: true,
+      message: 'Calculation updated successfully',
+      caseReference: reference
+    });
+  } catch (error) {
+    console.error('❌ Error updating calculation:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update calculation',
       error: error.message
     });
   }
