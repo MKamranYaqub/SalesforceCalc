@@ -1,96 +1,22 @@
 import { supabase } from '../config/supabase.js';
 
 /**
- * Create a new case
+ * Fetch all active rates from Supabase
  */
-export const createCase = async (caseData) => {
+export const fetchRates = async () => {
   const { data, error } = await supabase
-    .from('cases')
-    .insert([{
-      user_access_level: caseData.userAccessLevel || 'web_customer',
-      property_value: caseData.propertyValue,
-      monthly_rent: caseData.monthlyRent,
-      property_type: caseData.propertyType,
-      product_type: caseData.productType,
-      product_group: caseData.productGroup,
-      tier: caseData.tier,
-      is_retention: caseData.isRetention === 'Yes',
-      retention_ltv: caseData.retentionLtv ? parseInt(caseData.retentionLtv) : null,
-      loan_type_required: caseData.loanTypeRequired,
-      specific_net_loan: caseData.specificNetLoan,
-      specific_gross_loan: caseData.specificGrossLoan,
-      specific_ltv: caseData.specificLTV,
-      proc_fee_pct: caseData.procFeePct,
-      broker_fee_pct: caseData.brokerFeePct,
-      broker_fee_flat: caseData.brokerFeeFlat,
-      calculation_data: caseData.fullCalculationData,
-      best_gross_loan: caseData.bestGrossLoan,
-      best_net_loan: caseData.bestNetLoan,
-      best_fee_column: caseData.bestFeeColumn,
-      status: 'draft'
-    }])
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error creating case:', error);
-    throw error;
-  }
-
-  return data;
-};
-
-/**
- * Save case results
- */
-export const saveCaseResults = async (caseId, results) => {
-  const resultsData = results.map(result => ({
-    case_id: caseId,
-    fee_column: result.feeColumn,
-    gross_loan: result.grossLoan,
-    net_loan: result.netLoan,
-    ltv_percentage: result.ltvPercentage,
-    icr: result.icr,
-    full_rate: result.fullRate,
-    pay_rate: result.payRate,
-    rolled_months: result.rolledMonths,
-    deferred_rate: result.deferredRate,
-    product_fee: result.productFee,
-    rolled_interest: result.rolledInterest,
-    deferred_interest: result.deferredInterest,
-    direct_debit: result.directDebit
-  }));
-
-  const { error } = await supabase
-    .from('case_results')
-    .insert(resultsData);
-
-  if (error) {
-    console.error('Error saving case results:', error);
-    throw error;
-  }
-};
-
-/**
- * Get case by reference number
- */
-export const getCaseByReference = async (reference) => {
-  // Update access tracking
-  await supabase.rpc('increment_case_access', { 
-    case_ref: reference 
-  });
-
-  const { data, error } = await supabase
-    .from('cases')
+    .from('rates')
     .select(`
       *,
-      case_results (*)
+      product_group:product_groups(name),
+      property_type:property_types(name),
+      tier:tiers(name, tier_number),
+      rate_type:rate_types(name, is_margin)
     `)
-    .eq('case_reference', reference)
-    .single();
+    .eq('is_active', true);
 
   if (error) {
-    console.error('Error fetching case:', error);
+    console.error('Error fetching rates:', error);
     throw error;
   }
 
@@ -98,20 +24,88 @@ export const getCaseByReference = async (reference) => {
 };
 
 /**
- * Update case
+ * Fetch loan limits from Supabase
  */
-export const updateCase = async (caseId, updates) => {
+export const fetchLoanLimits = async () => {
   const { data, error } = await supabase
-    .from('cases')
-    .update(updates)
-    .eq('id', caseId)
-    .select()
-    .single();
+    .from('loan_limits')
+    .select(`
+      *,
+      property_type:property_types(name)
+    `)
+    .eq('is_active', true);
 
   if (error) {
-    console.error('Error updating case:', error);
+    console.error('Error fetching loan limits:', error);
     throw error;
   }
 
   return data;
+};
+
+/**
+ * Fetch term months configuration
+ */
+export const fetchTermMonths = async () => {
+  const { data, error } = await supabase
+    .from('term_months')
+    .select(`
+      *,
+      rate_type:rate_types(name)
+    `);
+
+  if (error) {
+    console.error('Error fetching term months:', error);
+    throw error;
+  }
+
+  return data;
+};
+
+/**
+ * Transform rates from database format to application format
+ */
+export const transformRatesForApp = (rates) => {
+  const transformed = {};
+
+  rates.forEach(rate => {
+    const productGroup = rate.product_group.name;
+    const propertyType = rate.property_type.name;
+    const tier = rate.tier.name;
+    const rateType = rate.rate_type.name;
+    const fee = rate.fee_percentage;
+    const isRetention = rate.is_retention;
+    const retentionLtv = rate.retention_ltv;
+
+    // Build nested structure
+    if (!transformed[productGroup]) transformed[productGroup] = {};
+    if (!transformed[productGroup][propertyType]) transformed[productGroup][propertyType] = {};
+    
+    const retentionKey = isRetention ? 'retention' : 'standard';
+    if (!transformed[productGroup][propertyType][retentionKey]) {
+      transformed[productGroup][propertyType][retentionKey] = {};
+    }
+
+    const path = transformed[productGroup][propertyType][retentionKey];
+
+    if (isRetention) {
+      if (!path[retentionLtv]) path[retentionLtv] = {};
+      const tierPath = path[retentionLtv];
+      if (!tierPath[tier]) tierPath[tier] = {};
+      if (!tierPath[tier][rateType]) tierPath[tier][rateType] = {};
+      tierPath[tier][rateType][fee] = rate.rate_value;
+      if (rate.rate_type.is_margin) {
+        tierPath[tier][rateType].isMargin = true;
+      }
+    } else {
+      if (!path[tier]) path[tier] = {};
+      if (!path[tier][rateType]) path[tier][rateType] = {};
+      path[tier][rateType][fee] = rate.rate_value;
+      if (rate.rate_type.is_margin) {
+        path[tier][rateType].isMargin = true;
+      }
+    }
+  });
+
+  return transformed;
 };
