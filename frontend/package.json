@@ -4,6 +4,7 @@
     "description": "BTL Rate Matrix Calculator - Refactored",
     "private": true,
     "dependencies": {
+        "@supabase/supabase-js": "^2.75.0",
         "express-rate-limit": "^8.1.0",
         "express-validator": "^7.2.1",
         "morgan": "^1.10.1",
