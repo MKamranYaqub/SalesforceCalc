@@ -26,6 +26,10 @@ import { PRODUCT_TYPES_LIST, PRODUCT_GROUPS, LOAN_TYPES, PROPERTY_TYPES } from '
 import './styles/styles.css';
 
 function App() {
+  // ============================================
+  // 1. ALL HOOKS MUST BE CALLED FIRST (before any conditional returns)
+  // ============================================
+  
   // Load criteria from Supabase
   const { 
     criteriaConfig, 
@@ -112,6 +116,177 @@ function App() {
     fees: false,
   });
 
+  // All useMemo and useEffect hooks
+  const limits = useMemo(() => {
+    return LOAN_LIMITS[propertyType] || LOAN_LIMITS.Residential;
+  }, [propertyType]);
+
+  const productTypesList = useMemo(() => {
+    return PRODUCT_TYPES_LIST[propertyType] || PRODUCT_TYPES_LIST.Residential;
+  }, [propertyType]);
+
+  const selected = useMemo(() => {
+    return selectRateSource({
+      propertyType,
+      productGroup,
+      isRetention,
+      retentionLtv,
+      tier,
+      productType,
+    });
+  }, [propertyType, productGroup, isRetention, retentionLtv, tier, productType]);
+
+  const feeColumns = useMemo(() => {
+    return getFeeColumns({
+      productGroup,
+      isRetention,
+      retentionLtv,
+      propertyType,
+    });
+  }, [productGroup, isRetention, retentionLtv, propertyType]);
+
+  const canShowMatrix = useMemo(() => {
+    const mr = parseNumber(monthlyRent);
+    const pv = parseNumber(propertyValue);
+    const sn = parseNumber(specificNetLoan);
+    const sg = parseNumber(specificGrossLoan);
+    if (!mr) return false;
+    if (loanTypeRequired === LOAN_TYPES.SPECIFIC_NET) return !!sn && !!pv;
+    if (loanTypeRequired === LOAN_TYPES.MAX_LTV) return !!pv;
+    if (loanTypeRequired === LOAN_TYPES.SPECIFIC_GROSS) return !!pv && !!sg;
+    return !!pv;
+  }, [monthlyRent, propertyValue, specificNetLoan, specificGrossLoan, loanTypeRequired]);
+
+  const allColumnData = useMemo(() => {
+    if (!canShowMatrix) return [];
+    const pv = parseNumber(propertyValue);
+    return feeColumns.map((colKey) => {
+      const manual = manualSettings[colKey];
+      const overriddenRate = rateOverrides[colKey];
+      const data = computeColumnData({
+        colKey,
+        manualRolled: manual?.rolledMonths,
+        manualDeferred: manual?.deferredPct,
+        overriddenRate,
+        selected,
+        propertyValue,
+        monthlyRent,
+        specificNetLoan,
+        specificGrossLoan,
+        specificLTV,
+        loanTypeRequired,
+        productType,
+        tier,
+        criteria,
+        propertyType,
+        productGroup,
+        isRetention,
+        retentionLtv,
+        effectiveProcFeePct,
+        brokerFeePct,
+        brokerFeeFlat,
+        feeOverrides,
+        limits,
+      });
+      if (!data) return null;
+      const netLtv = pv ? data.net / pv : null;
+      return { colKey, netLtv, ...data };
+    }).filter(Boolean);
+  }, [
+    canShowMatrix,
+    feeColumns,
+    manualSettings,
+    rateOverrides,
+    selected,
+    propertyValue,
+    monthlyRent,
+    specificNetLoan,
+    specificGrossLoan,
+    specificLTV,
+    loanTypeRequired,
+    productType,
+    tier,
+    criteria,
+    propertyType,
+    productGroup,
+    isRetention,
+    retentionLtv,
+    effectiveProcFeePct,
+    brokerFeePct,
+    brokerFeeFlat,
+    feeOverrides,
+    limits,
+  ]);
+
+  const maxLTV = useMemo(() => {
+    return getMaxLTV({
+      propertyType,
+      isRetention,
+      retentionLtv,
+      propertyAnswers: criteria,
+      tier,
+      productType,
+    });
+  }, [propertyType, isRetention, retentionLtv, criteria, tier, productType]);
+
+  const bestSummary = useMemo(() => {
+    if (!canShowMatrix || !allColumnData.length) return null;
+    const pv = parseNumber(propertyValue) || 0;
+    let best = null;
+    for (const d of allColumnData) {
+      if (!best || d.net > best.net) {
+        best = {
+          colKey: d.colKey,
+          gross: d.gross,
+          grossStr: formatCurrency(d.gross),
+          grossLtvPct: pv ? Math.round((d.gross / pv) * 100) : 0,
+          net: d.net,
+          netStr: formatCurrency(d.net),
+          netLtvPct: pv ? Math.round((d.net / pv) * 100) : 0,
+        };
+      }
+    }
+    return best;
+  }, [allColumnData, canShowMatrix, propertyValue]);
+
+  const deferredCap = useMemo(() => {
+    return selected?.isMargin ? limits.MAX_DEFERRED_TRACKER : limits.MAX_DEFERRED_FIX;
+  }, [selected, limits]);
+
+  const calculationData = useMemo(() => ({
+    propertyValue: parseNumber(propertyValue),
+    monthlyRent: parseNumber(monthlyRent),
+    propertyType,
+    productType,
+    productGroup,
+    tier,
+    isRetention,
+    retentionLtv,
+    loanTypeRequired,
+    specificNetLoan: parseNumber(specificNetLoan),
+    specificGrossLoan: parseNumber(specificGrossLoan),
+    specificLTV,
+    procFeePct: effectiveProcFeePct,
+    brokerFeePct: brokerFeePct ? parseNumber(brokerFeePct) : null,
+    brokerFeeFlat: brokerFeeFlat ? parseNumber(brokerFeeFlat) : null,
+  }), [
+    propertyValue,
+    monthlyRent,
+    propertyType,
+    productType,
+    productGroup,
+    tier,
+    isRetention,
+    retentionLtv,
+    loanTypeRequired,
+    specificNetLoan,
+    specificGrossLoan,
+    specificLTV,
+    effectiveProcFeePct,
+    brokerFeePct,
+    brokerFeeFlat,
+  ]);
+
   // Reset criteria when property type changes
   useEffect(() => {
     if (criteriaConfig) {
@@ -125,6 +300,10 @@ function App() {
       setProductGroup(PRODUCT_GROUPS.SPECIALIST);
     }
   }, [isWithinCoreCriteria, productGroup, setProductGroup]);
+
+  // ============================================
+  // 2. NOW CONDITIONAL RENDERING (after all hooks)
+  // ============================================
 
   // Show loading state while criteria loads
   if (criteriaLoading) {
@@ -283,156 +462,9 @@ function App() {
     );
   }
 
-  const limits = useMemo(() => {
-    return LOAN_LIMITS[propertyType] || LOAN_LIMITS.Residential;
-  }, [propertyType]);
-
-  const productTypesList = PRODUCT_TYPES_LIST[propertyType] || PRODUCT_TYPES_LIST.Residential;
-
-  const selected = useMemo(() => {
-    return selectRateSource({
-      propertyType,
-      productGroup,
-      isRetention,
-      retentionLtv,
-      tier,
-      productType,
-    });
-  }, [propertyType, productGroup, isRetention, retentionLtv, tier, productType]);
-
-  const feeColumns = useMemo(() => {
-    return getFeeColumns({
-      productGroup,
-      isRetention,
-      retentionLtv,
-      propertyType,
-    });
-  }, [productGroup, isRetention, retentionLtv, propertyType]);
-
-  const canShowMatrix = useMemo(() => {
-    const mr = parseNumber(monthlyRent);
-    const pv = parseNumber(propertyValue);
-    const sn = parseNumber(specificNetLoan);
-    const sg = parseNumber(specificGrossLoan);
-    if (!mr) return false;
-    if (loanTypeRequired === LOAN_TYPES.SPECIFIC_NET) return !!sn && !!pv;
-    if (loanTypeRequired === LOAN_TYPES.MAX_LTV) return !!pv;
-    if (loanTypeRequired === LOAN_TYPES.SPECIFIC_GROSS) return !!pv && !!sg;
-    return !!pv;
-  }, [monthlyRent, propertyValue, specificNetLoan, specificGrossLoan, loanTypeRequired]);
-
-  const allColumnData = useMemo(() => {
-    if (!canShowMatrix) return [];
-    const pv = parseNumber(propertyValue);
-    return feeColumns.map((colKey) => {
-      const manual = manualSettings[colKey];
-      const overriddenRate = rateOverrides[colKey];
-      const data = computeColumnData({
-        colKey,
-        manualRolled: manual?.rolledMonths,
-        manualDeferred: manual?.deferredPct,
-        overriddenRate,
-        selected,
-        propertyValue,
-        monthlyRent,
-        specificNetLoan,
-        specificGrossLoan,
-        specificLTV,
-        loanTypeRequired,
-        productType,
-        tier,
-        criteria,
-        propertyType,
-        productGroup,
-        isRetention,
-        retentionLtv,
-        effectiveProcFeePct,
-        brokerFeePct,
-        brokerFeeFlat,
-        feeOverrides,
-        limits,
-      });
-      if (!data) return null;
-      const netLtv = pv ? data.net / pv : null;
-      return { colKey, netLtv, ...data };
-    }).filter(Boolean);
-  }, [
-    canShowMatrix,
-    feeColumns,
-    manualSettings,
-    rateOverrides,
-    selected,
-    propertyValue,
-    monthlyRent,
-    specificNetLoan,
-    specificGrossLoan,
-    specificLTV,
-    loanTypeRequired,
-    productType,
-    tier,
-    criteria,
-    propertyType,
-    productGroup,
-    isRetention,
-    retentionLtv,
-    effectiveProcFeePct,
-    brokerFeePct,
-    brokerFeeFlat,
-    feeOverrides,
-    limits,
-  ]);
-
-  const maxLTV = useMemo(() => {
-    return getMaxLTV({
-      propertyType,
-      isRetention,
-      retentionLtv,
-      propertyAnswers: criteria,
-      tier,
-      productType,
-    });
-  }, [propertyType, isRetention, retentionLtv, criteria, tier, productType]);
-
-  const bestSummary = useMemo(() => {
-    if (!canShowMatrix || !allColumnData.length) return null;
-    const pv = parseNumber(propertyValue) || 0;
-    let best = null;
-    for (const d of allColumnData) {
-      if (!best || d.net > best.net) {
-        best = {
-          colKey: d.colKey,
-          gross: d.gross,
-          grossStr: formatCurrency(d.gross),
-          grossLtvPct: pv ? Math.round((d.gross / pv) * 100) : 0,
-          net: d.net,
-          netStr: formatCurrency(d.net),
-          netLtvPct: pv ? Math.round((d.net / pv) * 100) : 0,
-        };
-      }
-    }
-    return best;
-  }, [allColumnData, canShowMatrix, propertyValue]);
-
-  const deferredCap = selected?.isMargin ? limits.MAX_DEFERRED_TRACKER : limits.MAX_DEFERRED_FIX;
-
-  // Prepare calculation data for saving
-  const calculationData = {
-    propertyValue: parseNumber(propertyValue),
-    monthlyRent: parseNumber(monthlyRent),
-    propertyType,
-    productType,
-    productGroup,
-    tier,
-    isRetention,
-    retentionLtv,
-    loanTypeRequired,
-    specificNetLoan: parseNumber(specificNetLoan),
-    specificGrossLoan: parseNumber(specificGrossLoan),
-    specificLTV,
-    procFeePct: effectiveProcFeePct,
-    brokerFeePct: brokerFeePct ? parseNumber(brokerFeePct) : null,
-    brokerFeeFlat: brokerFeeFlat ? parseNumber(brokerFeeFlat) : null,
-  };
+  // ============================================
+  // 3. EVENT HANDLERS
+  // ============================================
 
   // Handle case loaded from lookup
   const handleCaseLoaded = (caseData) => {
@@ -533,6 +565,10 @@ function App() {
       alert('✅ Ready for new calculation');
     }
   };
+
+  // ============================================
+  // 4. MAIN RENDER
+  // ============================================
 
   return (
     <div className="app-container">
