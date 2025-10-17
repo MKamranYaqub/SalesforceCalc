@@ -1,20 +1,23 @@
 /**
- * Hook for managing criteria and tier calculation
+ * Hook for managing criteria and tier calculation with dynamic configuration
  */
 import { useState, useMemo, useCallback } from 'react';
 import { PROPERTY_TYPES } from '../config/constants';
-import { CRITERIA_CONFIG, CORE_CRITERIA_CONFIG } from '../config/criteria';
 
-export const useCriteriaManagement = (propertyType) => {
+export const useCriteriaManagement = (propertyType, criteriaConfig, coreCriteriaConfig) => {
   const getCurrentCriteria = useCallback(() => {
+    if (!criteriaConfig) return null;
+    
     if (propertyType === PROPERTY_TYPES.COMMERCIAL || 
         propertyType === PROPERTY_TYPES.SEMI_COMMERCIAL) {
-      return CRITERIA_CONFIG.Commercial || CRITERIA_CONFIG.Residential;
+      return criteriaConfig.Commercial || criteriaConfig.Residential;
     }
-    return CRITERIA_CONFIG.Residential;
-  }, [propertyType]);
+    return criteriaConfig.Residential;
+  }, [propertyType, criteriaConfig]);
 
   const initializeCriteriaState = useCallback((cfg) => {
+    if (!cfg) return {};
+    
     const state = {};
     cfg?.propertyQuestions?.forEach((q) => {
       state[q.key] = q.options[0].label;
@@ -31,6 +34,8 @@ export const useCriteriaManagement = (propertyType) => {
 
   const tier = useMemo(() => {
     const cfg = getCurrentCriteria();
+    if (!cfg) return 'Tier 1';
+    
     let maxTier = 1;
     cfg?.propertyQuestions?.forEach((q) => {
       const answer = criteria[q.key];
@@ -47,7 +52,9 @@ export const useCriteriaManagement = (propertyType) => {
 
   const isWithinCoreCriteria = useMemo(() => {
     if (propertyType !== PROPERTY_TYPES.RESIDENTIAL) return false;
-    const coreCfg = CORE_CRITERIA_CONFIG?.Residential;
+    if (!coreCriteriaConfig) return false;
+    
+    const coreCfg = coreCriteriaConfig?.Residential;
     if (!coreCfg) return false;
 
     const checkGroup = (groupKey, fullCfg) => {
@@ -64,10 +71,13 @@ export const useCriteriaManagement = (propertyType) => {
       return true;
     };
 
-    const okProp = checkGroup("propertyQuestions", CRITERIA_CONFIG?.Residential);
-    const okApp = checkGroup("applicantQuestions", CRITERIA_CONFIG?.Residential);
+     const standardCriteria = criteriaConfig?.Residential;
+    if (!standardCriteria) return false;
+
+    const okProp = checkGroup("propertyQuestions", standardCriteria);
+    const okApp = checkGroup("applicantQuestions", standardCriteria);
     return okProp && okApp;
-  }, [criteria, propertyType]);
+  }, [criteria, propertyType, criteriaConfig, coreCriteriaConfig]);
 
   return {
     criteria,

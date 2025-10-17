@@ -1,11 +1,12 @@
 /**
- * Main application component with save/load functionality
+ * Main application component with dynamic criteria and save/load functionality
  */
 import React, { useState, useMemo, useEffect } from 'react';
 import { useProductSelection } from './hooks/useProductSelection';
 import { useCriteriaManagement } from './hooks/useCriteriaManagement';
 import { useLoanInputs } from './hooks/useLoanInputs';
 import { useFeeManagement } from './hooks/useFeeManagement';
+import { useDynamicCriteria } from './hooks/useDynamicCriteria';
 import { ProductSetup } from './components/ProductSetup';
 import { CriteriaSection } from './components/CriteriaSection';
 import { PropertyProductSection } from './components/PropertyProductSection';
@@ -25,6 +26,15 @@ import { PRODUCT_TYPES_LIST, PRODUCT_GROUPS, LOAN_TYPES, PROPERTY_TYPES } from '
 import './styles/styles.css';
 
 function App() {
+  // Load criteria from Supabase
+  const { 
+    criteriaConfig, 
+    coreCriteriaConfig, 
+    loading: criteriaLoading, 
+    error: criteriaError,
+    reload: reloadCriteria 
+  } = useDynamicCriteria();
+
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [userAccessLevel] = useState('web_customer');
   const [loadedCaseReference, setLoadedCaseReference] = useState(null);
@@ -45,7 +55,7 @@ function App() {
     setProductGroup,
   } = productSelection;
 
-  const criteriaManagement = useCriteriaManagement(propertyType);
+  const criteriaManagement = useCriteriaManagement(propertyType, criteriaConfig, coreCriteriaConfig);
   const { 
     criteria, 
     setCriteria, 
@@ -104,8 +114,10 @@ function App() {
 
   // Reset criteria when property type changes
   useEffect(() => {
-    setCriteria(initializeCriteriaState(getCurrentCriteria()));
-  }, [propertyType, getCurrentCriteria, initializeCriteriaState, setCriteria]);
+    if (criteriaConfig) {
+      setCriteria(initializeCriteriaState(getCurrentCriteria()));
+    }
+  }, [propertyType, getCurrentCriteria, initializeCriteriaState, setCriteria, criteriaConfig]);
 
   // Revert to Specialist if Core becomes ineligible
   useEffect(() => {
@@ -113,6 +125,163 @@ function App() {
       setProductGroup(PRODUCT_GROUPS.SPECIALIST);
     }
   }, [isWithinCoreCriteria, productGroup, setProductGroup]);
+
+  // Show loading state while criteria loads
+  if (criteriaLoading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#f1f5f9',
+        padding: '20px',
+      }}>
+        <div style={{
+          textAlign: 'center',
+          padding: '40px',
+          background: '#fff',
+          borderRadius: '12px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          maxWidth: '500px',
+          width: '100%',
+        }}>
+          <div style={{ 
+            fontSize: '48px', 
+            marginBottom: '16px',
+            animation: 'pulse 1.5s ease-in-out infinite',
+          }}>
+            ⏳
+          </div>
+          <div style={{ 
+            fontSize: '20px', 
+            fontWeight: 600, 
+            color: '#0f172a',
+            marginBottom: '8px',
+          }}>
+            Loading Configuration...
+          </div>
+          <div style={{ 
+            fontSize: '14px', 
+            color: '#64748b',
+          }}>
+            Fetching criteria and rates from database
+          </div>
+          <style>{`
+            @keyframes pulse {
+              0%, 100% { opacity: 1; transform: scale(1); }
+              50% { opacity: 0.5; transform: scale(0.95); }
+            }
+          `}</style>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (criteriaError) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#f1f5f9',
+        padding: '20px',
+      }}>
+        <div style={{
+          textAlign: 'center',
+          padding: '40px',
+          background: '#fff',
+          border: '2px solid #ef4444',
+          borderRadius: '12px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          maxWidth: '600px',
+          width: '100%',
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>❌</div>
+          <div style={{ 
+            fontSize: '20px', 
+            fontWeight: 600, 
+            color: '#0f172a', 
+            marginBottom: '12px',
+          }}>
+            Failed to Load Configuration
+          </div>
+          <div style={{ 
+            fontSize: '14px', 
+            color: '#64748b', 
+            marginBottom: '8px',
+            padding: '12px',
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
+            borderRadius: '6px',
+          }}>
+            <strong>Error:</strong> {criteriaError}
+          </div>
+          <div style={{ 
+            fontSize: '13px', 
+            color: '#64748b', 
+            marginBottom: '20px',
+          }}>
+            Please check that:
+            <ul style={{ 
+              textAlign: 'left', 
+              marginTop: '8px',
+              paddingLeft: '20px',
+            }}>
+              <li>Backend server is running on port 3001</li>
+              <li>Supabase credentials are configured correctly</li>
+              <li>Database tables have been created</li>
+              <li>Migration script has been run</li>
+            </ul>
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            gap: '12px', 
+            justifyContent: 'center',
+          }}>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                padding: '12px 24px',
+                background: '#008891',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 600,
+                transition: 'all 0.2s ease',
+              }}
+              onMouseOver={(e) => e.target.style.background = '#006b73'}
+              onMouseOut={(e) => e.target.style.background = '#008891'}
+            >
+              🔄 Reload Page
+            </button>
+            <button
+              onClick={reloadCriteria}
+              style={{
+                padding: '12px 24px',
+                background: '#f1f5f9',
+                color: '#0f172a',
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 600,
+                transition: 'all 0.2s ease',
+              }}
+              onMouseOver={(e) => e.target.style.background = '#e2e8f0'}
+              onMouseOut={(e) => e.target.style.background = '#f1f5f9'}
+            >
+              🔁 Retry Loading
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const limits = useMemo(() => {
     return LOAN_LIMITS[propertyType] || LOAN_LIMITS.Residential;
@@ -269,13 +438,10 @@ function App() {
   const handleCaseLoaded = (caseData) => {
     console.log('📥 Loading case data:', caseData);
     
-    // Store the loaded case reference for updates
     setLoadedCaseReference(caseData.case_reference);
     
-    // Use calculation_data if available, otherwise use root fields
     const calc = caseData.calculation_data || caseData;
     
-    // Load property and product settings
     if (calc.propertyType || caseData.property_type) {
       setPropertyType(calc.propertyType || caseData.property_type);
     }
@@ -296,7 +462,6 @@ function App() {
       setProductGroup(calc.productGroup || caseData.product_group);
     }
     
-    // Load retention settings
     const isRet = calc.isRetention === 'Yes' || calc.isRetention === true || caseData.is_retention === true;
     setIsRetention(isRet ? 'Yes' : 'No');
     
@@ -304,12 +469,10 @@ function App() {
       setRetentionLtv(String(calc.retentionLtv || caseData.retention_ltv));
     }
     
-    // Load loan type
     if (calc.loanTypeRequired || caseData.loan_type_required) {
       setLoanTypeRequired(calc.loanTypeRequired || caseData.loan_type_required);
     }
     
-    // Load specific loan values
     if (calc.specificNetLoan || caseData.specific_net_loan) {
       const netLoan = calc.specificNetLoan || caseData.specific_net_loan;
       if (netLoan && netLoan !== 0) {
@@ -331,7 +494,6 @@ function App() {
       }
     }
     
-    // Load fees
     if (calc.procFeePct || caseData.proc_fee_pct) {
       setProcFeePctInput(String(calc.procFeePct || caseData.proc_fee_pct));
     }
@@ -344,7 +506,6 @@ function App() {
       setBrokerFeeFlat(String(calc.brokerFeeFlat || caseData.broker_fee_flat));
     }
     
-    // Load criteria if available
     if (calc.criteria) {
       console.log('📋 Loading criteria:', calc.criteria);
       setCriteria(calc.criteria);
@@ -352,7 +513,6 @@ function App() {
     
     console.log('✅ Case data loaded into form');
     
-    // Show success message
     setTimeout(() => {
       alert(`✅ Case ${caseData.case_reference} loaded successfully!\n\n` +
             `Property: £${(calc.propertyValue || caseData.property_value)?.toLocaleString()}\n` +
@@ -362,11 +522,10 @@ function App() {
     }, 100);
   };
 
-  // Handle new calculation - clear loaded reference
+  // Handle new calculation
   const handleNewCalculation = () => {
     if (window.confirm('Start a new calculation? This will clear the current form.')) {
       setLoadedCaseReference(null);
-      // Optionally reset all form fields here
       setPropertyValue('');
       setMonthlyRent('');
       setSpecificNetLoan('');
@@ -380,7 +539,7 @@ function App() {
       {/* Case Lookup Section */}
       <CaseLookup onCaseLoaded={handleCaseLoaded} />
 
-      {/* New Calculation Button - Show only when a case is loaded */}
+      {/* New Calculation Button */}
       {loadedCaseReference && (
         <div style={{
           gridColumn: "1 / -1",
@@ -540,7 +699,6 @@ function App() {
       {/* Action Buttons */}
       {canShowMatrix && bestSummary && (
         <>
-          {/* Save/Update Calculation Button */}
           <SaveCalculationButton
             calculationData={calculationData}
             allColumnData={allColumnData}
@@ -553,7 +711,6 @@ function App() {
             }}
           />
 
-          {/* Email Results Button */}
           <button
             onClick={() => setShowEmailModal(true)}
             style={{
@@ -580,7 +737,6 @@ function App() {
         </>
       )}
 
-      {/* Email Modal */}
       <EmailResultsModal
         isOpen={showEmailModal}
         onClose={() => setShowEmailModal(false)}
