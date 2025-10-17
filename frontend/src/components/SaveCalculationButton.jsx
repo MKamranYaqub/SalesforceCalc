@@ -13,11 +13,12 @@ export const SaveCalculationButton = ({
   const [saving, setSaving] = useState(false);
   const [savedReference, setSavedReference] = useState(null);
   const [error, setError] = useState(null);
-const isUpdate = !!existingCaseReference;
-  const buttonText = isUpdate ? 'Update Calculation' : 'Save Calculation';
-  const buttonIcon = isUpdate ? '🔄' : '💾';
+  
+  const isUpdate = !!existingCaseReference;
+  const buttonText = isUpdate ? '🔄 Update Calculation' : '💾 Save Calculation';
+
   const handleSave = async () => {
-    console.log('🔵 Save button clicked');
+    console.log('🔵 Save button clicked', { isUpdate, existingCaseReference });
     setSaving(true);
     setError(null);
 
@@ -78,12 +79,19 @@ const isUpdate = !!existingCaseReference;
         } : null
       };
 
-      console.log('📋 Cleaned data:', dataToSend);
+      console.log('📋 Prepared data:', dataToSend);
 
-      console.log('📤 Sending data to backend:', dataToSend);
+      // Use PUT for updates, POST for new saves
+      const url = isUpdate 
+        ? `http://localhost:3001/api/cases/${existingCaseReference}`
+        : 'http://localhost:3001/api/cases';
+      
+      const method = isUpdate ? 'PUT' : 'POST';
 
-      const response = await fetch('http://localhost:3001/api/cases', {
-        method: 'POST',
+      console.log(`📤 ${method} to:`, url);
+
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -96,17 +104,22 @@ const isUpdate = !!existingCaseReference;
       console.log('📥 Response data:', result);
 
       if (result.success) {
-        setSavedReference(result.caseReference);
-        console.log('✅ Case saved successfully:', result.caseReference);
+        const reference = result.caseReference || existingCaseReference;
+        setSavedReference(reference);
+        console.log(`✅ Case ${isUpdate ? 'updated' : 'saved'} successfully:`, reference);
+        
+        // Call onSaved callback if provided
+        if (onSaved) {
+          onSaved(reference);
+        }
       } else {
-        throw new Error(result.message || 'Failed to save calculation');
+        throw new Error(result.message || `Failed to ${isUpdate ? 'update' : 'save'} calculation`);
       }
     } catch (err) {
-      console.error('❌ Error saving calculation:', err);
+      console.error(`❌ Error ${isUpdate ? 'updating' : 'saving'} calculation:`, err);
       setError(err.message);
       
-      // Show user-friendly error
-      alert(`Error saving calculation: ${err.message}\n\nPlease check:\n1. Backend is running on port 3001\n2. Check browser console for details`);
+      alert(`Error ${isUpdate ? 'updating' : 'saving'} calculation: ${err.message}\n\nPlease check:\n1. Backend is running on port 3001\n2. Check browser console for details`);
     } finally {
       setSaving(false);
     }
@@ -138,7 +151,7 @@ const isUpdate = !!existingCaseReference;
           color: "#166534", 
           marginBottom: "12px" 
         }}>
-          Calculation Saved Successfully!
+          {isUpdate ? 'Calculation Updated Successfully!' : 'Calculation Saved Successfully!'}
         </div>
         
         <div style={{ 
@@ -160,7 +173,9 @@ const isUpdate = !!existingCaseReference;
           color: "#166534",
           marginBottom: "16px"
         }}>
-          Save this reference number to access your calculation later
+          {isUpdate 
+            ? 'Your calculation has been updated'
+            : 'Save this reference number to access your calculation later'}
         </div>
         
         <div style={{
@@ -210,7 +225,7 @@ const isUpdate = !!existingCaseReference;
             onMouseOver={(e) => e.target.style.background = "#e2e8f0"}
             onMouseOut={(e) => e.target.style.background = "#f1f5f9"}
           >
-            Save Another
+            {isUpdate ? 'Done' : 'Save Another'}
           </button>
         </div>
         
@@ -237,7 +252,7 @@ const isUpdate = !!existingCaseReference;
           style={{
             width: "100%",
             padding: "16px 32px",
-            background: saving ? "#64748b" : "#16a34a",
+            background: saving ? "#64748b" : isUpdate ? "#f59e0b" : "#16a34a",
             color: "#fff",
             border: "none",
             borderRadius: "8px",
@@ -250,8 +265,16 @@ const isUpdate = !!existingCaseReference;
             gap: "8px",
             transition: "all 0.2s ease",
           }}
-          onMouseOver={(e) => !saving && (e.target.style.background = "#15803d")}
-          onMouseOut={(e) => !saving && (e.target.style.background = "#16a34a")}
+          onMouseOver={(e) => {
+            if (!saving) {
+              e.target.style.background = isUpdate ? "#d97706" : "#15803d";
+            }
+          }}
+          onMouseOut={(e) => {
+            if (!saving) {
+              e.target.style.background = isUpdate ? "#f59e0b" : "#16a34a";
+            }
+          }}
         >
           {saving ? (
             <>
@@ -263,10 +286,10 @@ const isUpdate = !!existingCaseReference;
                 borderRadius: '50%',
                 animation: 'spin 0.8s linear infinite',
               }}></span>
-              Saving...
+              {isUpdate ? 'Updating...' : 'Saving...'}
             </>
           ) : (
-            <>💾 Try Save Again</>
+            <>{isUpdate ? '🔄 Try Update Again' : '💾 Try Save Again'}</>
           )}
         </button>
         
@@ -291,7 +314,7 @@ const isUpdate = !!existingCaseReference;
     );
   }
 
-  // Default state - show save button
+  // Default state - show save/update button
   return (
     <button
       onClick={handleSave}
@@ -299,7 +322,7 @@ const isUpdate = !!existingCaseReference;
       style={{
         gridColumn: "1 / -1",
         padding: "16px 32px",
-        background: saving ? "#64748b" : "#16a34a",
+        background: saving ? "#64748b" : isUpdate ? "#f59e0b" : "#16a34a",
         color: "#fff",
         border: "none",
         borderRadius: "8px",
@@ -311,10 +334,18 @@ const isUpdate = !!existingCaseReference;
         justifyContent: "center",
         gap: "8px",
         transition: "all 0.2s ease",
-        boxShadow: saving ? "none" : "0 2px 8px rgba(22, 163, 74, 0.3)"
+        boxShadow: saving ? "none" : isUpdate ? "0 2px 8px rgba(245, 158, 11, 0.3)" : "0 2px 8px rgba(22, 163, 74, 0.3)"
       }}
-      onMouseOver={(e) => !saving && (e.target.style.background = "#15803d")}
-      onMouseOut={(e) => !saving && (e.target.style.background = "#16a34a")}
+      onMouseOver={(e) => {
+        if (!saving) {
+          e.target.style.background = isUpdate ? "#d97706" : "#15803d";
+        }
+      }}
+      onMouseOut={(e) => {
+        if (!saving) {
+          e.target.style.background = isUpdate ? "#f59e0b" : "#16a34a";
+        }
+      }}
     >
       {saving ? (
         <>
@@ -326,10 +357,10 @@ const isUpdate = !!existingCaseReference;
             borderRadius: '50%',
             animation: 'spin 0.8s linear infinite',
           }}></span>
-          Saving Calculation...
+          {isUpdate ? 'Updating Calculation...' : 'Saving Calculation...'}
         </>
       ) : (
-        <>💾 Save Calculation</>
+        buttonText
       )}
       <style>{`
         @keyframes spin {
@@ -345,11 +376,15 @@ SaveCalculationButton.propTypes = {
   allColumnData: PropTypes.array.isRequired,
   bestSummary: PropTypes.object,
   userAccessLevel: PropTypes.string,
-  criteria: PropTypes.object
+  criteria: PropTypes.object,
+  existingCaseReference: PropTypes.string,
+  onSaved: PropTypes.func
 };
 
 SaveCalculationButton.defaultProps = {
   bestSummary: null,
   userAccessLevel: 'web_customer',
-  criteria: {}
+  criteria: {},
+  existingCaseReference: null,
+  onSaved: null
 };

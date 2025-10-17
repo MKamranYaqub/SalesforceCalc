@@ -26,8 +26,9 @@ import './styles/styles.css';
 
 function App() {
   const [showEmailModal, setShowEmailModal] = useState(false);
-  const [userAccessLevel] = useState('web_customer'); // Can be changed based on auth
-   const [loadedCaseReference, setLoadedCaseReference] = useState(null); // Track loaded case
+  const [userAccessLevel] = useState('web_customer');
+  const [loadedCaseReference, setLoadedCaseReference] = useState(null);
+  
   const productSelection = useProductSelection();
   const {
     mainProductType,
@@ -268,6 +269,9 @@ function App() {
   const handleCaseLoaded = (caseData) => {
     console.log('📥 Loading case data:', caseData);
     
+    // Store the loaded case reference for updates
+    setLoadedCaseReference(caseData.case_reference);
+    
     // Use calculation_data if available, otherwise use root fields
     const calc = caseData.calculation_data || caseData;
     
@@ -290,10 +294,6 @@ function App() {
     
     if (calc.productGroup || caseData.product_group) {
       setProductGroup(calc.productGroup || caseData.product_group);
-    }
-    
-    if (calc.tier || caseData.tier) {
-      // Tier will be recalculated from criteria, but we can set it temporarily
     }
     
     // Load retention settings
@@ -362,10 +362,63 @@ function App() {
     }, 100);
   };
 
+  // Handle new calculation - clear loaded reference
+  const handleNewCalculation = () => {
+    if (window.confirm('Start a new calculation? This will clear the current form.')) {
+      setLoadedCaseReference(null);
+      // Optionally reset all form fields here
+      setPropertyValue('');
+      setMonthlyRent('');
+      setSpecificNetLoan('');
+      setSpecificGrossLoan('');
+      alert('✅ Ready for new calculation');
+    }
+  };
+
   return (
     <div className="app-container">
       {/* Case Lookup Section */}
       <CaseLookup onCaseLoaded={handleCaseLoaded} />
+
+      {/* New Calculation Button - Show only when a case is loaded */}
+      {loadedCaseReference && (
+        <div style={{
+          gridColumn: "1 / -1",
+          padding: "12px",
+          background: "#fff7ed",
+          border: "1px solid #fed7aa",
+          borderRadius: "8px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "18px" }}>📝</span>
+            <span style={{ fontSize: "14px", color: "#7c2d12", fontWeight: 600 }}>
+              Editing: <strong>{loadedCaseReference}</strong>
+            </span>
+          </div>
+          <button
+            onClick={handleNewCalculation}
+            style={{
+              padding: "8px 16px",
+              background: "#f1f5f9",
+              color: "#0f172a",
+              border: "1px solid #cbd5e1",
+              borderRadius: "6px",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+            onMouseOver={(e) => e.target.style.background = "#e2e8f0"}
+            onMouseOut={(e) => e.target.style.background = "#f1f5f9"}
+          >
+            ➕ New Calculation
+          </button>
+        </div>
+      )}
 
       <ProductSetup
         mainProductType={mainProductType}
@@ -487,13 +540,17 @@ function App() {
       {/* Action Buttons */}
       {canShowMatrix && bestSummary && (
         <>
-          {/* Save Calculation Button */}
+          {/* Save/Update Calculation Button */}
           <SaveCalculationButton
             calculationData={calculationData}
             allColumnData={allColumnData}
             bestSummary={bestSummary}
             userAccessLevel={userAccessLevel}
             criteria={criteria}
+            existingCaseReference={loadedCaseReference}
+            onSaved={(savedReference) => {
+              setLoadedCaseReference(savedReference);
+            }}
           />
 
           {/* Email Results Button */}
