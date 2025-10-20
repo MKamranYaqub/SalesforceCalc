@@ -1,15 +1,21 @@
 /**
- * Configuration for Bridge & Fusion products.
- * Defines property sub‑products, LTV bands, variable and fixed rates,
- * loan limits and Fusion bands. See data.js of your standalone calculator for values.
+ * Bridge & Fusion rate configuration.
+ *
+ * This file defines the available sub‑products, LTV buckets and
+ * corresponding rates for variable, fixed and fusion products.
+ * The structure is modelled on the standalone bridge calculator
+ * provided by the user and should be kept in sync with that data.
  */
+
+// List of sub‑products for residential and commercial property types.
 export const BRIDGE_SUB_PRODUCTS_RESI = [
-  'Resi BTL Single Unit',
+  'Resi BTL single unit',
   'Resi Large Loan',
   'Resi Portfolio',
   'Dev Exit',
   'Permitted/Light Dev',
 ];
+
 export const BRIDGE_SUB_PRODUCTS_COMM = [
   'Semi & Full Commercial',
   'Semi & Full Commercial Large Loan',
@@ -17,12 +23,13 @@ export const BRIDGE_SUB_PRODUCTS_COMM = [
   'Permitted/Light Dev',
 ];
 
+// Supported LTV tiers for bridge & fusion products.
 export const LTV_BUCKETS = [60, 70, 75];
 
-// Variable margin per month (converted to annual in calculations)
+// Variable bridge monthly margins (converted to annual in calculations).
 export const VARIABLE_RATES = {
   60: {
-    'Resi BTL Single Unit': 0.0045,
+    'Resi BTL single unit': 0.0045,
     'Resi Large Loan': 0.0055,
     'Resi Portfolio': 0.005,
     'Dev Exit': 0.005,
@@ -32,7 +39,7 @@ export const VARIABLE_RATES = {
     '2nd charge': 0.005,
   },
   70: {
-    'Resi BTL Single Unit': 0.0055,
+    'Resi BTL single unit': 0.0055,
     'Resi Large Loan': 0.0065,
     'Resi Portfolio': 0.006,
     'Dev Exit': 0.006,
@@ -42,7 +49,7 @@ export const VARIABLE_RATES = {
     '2nd charge': 0.006,
   },
   75: {
-    'Resi BTL Single Unit': 0.0065,
+    'Resi BTL single unit': 0.0065,
     'Resi Large Loan': 0.0075,
     'Resi Portfolio': 0.007,
     'Dev Exit': 0.007,
@@ -53,10 +60,10 @@ export const VARIABLE_RATES = {
   },
 };
 
-// Fixed coupon (annual) rates by sub‑product & LTV
+// Fixed bridge annual coupon rates by LTV and sub‑product.
 export const FIXED_RATES = {
   60: {
-    'Resi BTL Single Unit': 0.0080,
+    'Resi BTL single unit': 0.0080,
     'Resi Large Loan': 0.0095,
     'Resi Portfolio': 0.0089,
     'Dev Exit': 0.0089,
@@ -66,7 +73,7 @@ export const FIXED_RATES = {
     '2nd charge': 0.0099,
   },
   70: {
-    'Resi BTL Single Unit': 0.0095,
+    'Resi BTL single unit': 0.0095,
     'Resi Large Loan': 0.0105,
     'Resi Portfolio': 0.0099,
     'Dev Exit': 0.0099,
@@ -76,7 +83,7 @@ export const FIXED_RATES = {
     '2nd charge': 0.0109,
   },
   75: {
-    'Resi BTL Single Unit': 0.0105,
+    'Resi BTL single unit': 0.0105,
     'Resi Large Loan': 0.0115,
     'Resi Portfolio': 0.0105,
     'Dev Exit': 0.0105,
@@ -87,9 +94,10 @@ export const FIXED_RATES = {
   },
 };
 
-// Loan limits by sub‑product
+// Loan limits by sub‑product.  These values are representative and may
+// need to be adjusted to match your latest rates.
 export const BRIDGE_LIMITS = {
-  'Resi BTL Single Unit': { min: 100000, max: 3000000 },
+  'Resi BTL single unit': { min: 100000, max: 3000000 },
   'Resi Large Loan': { min: 3000001, max: 20000000 },
   'Resi Portfolio': { min: 100000, max: 50000000 },
   'Dev Exit': { min: 100000, max: 30000000 },
@@ -99,7 +107,10 @@ export const BRIDGE_LIMITS = {
   '2nd charge': { min: 100000, max: 5000000 },
 };
 
-// Fusion bands by property type (margin is annual; gross loan selects band)
+// Fusion tier bands for residential and commercial properties.  Each tier
+// defines a margin that is added to the base rate (BBR) to produce
+// the full annual rate.  The gross loan amount determines which tier
+// applies.
 export const FUSION_BANDS = {
   Residential: [
     { name: 'Fusion S', min: 100000, max: 3000000, margin: 0.0479 },
@@ -114,7 +125,7 @@ export const FUSION_BANDS = {
   maxLTV: { Residential: 0.75, Commercial: 0.7 },
 };
 
-// Fusion limits used by your standalone code
+// Additional fusion constraints.
 export const FUSION_LIMITS = {
   deferredPctFusionMax: 0.02,
   rolledMonthsMinFusion: 6,

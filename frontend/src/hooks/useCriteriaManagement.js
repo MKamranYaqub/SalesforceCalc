@@ -10,6 +10,10 @@
 // Semi‑Commercial branches based on the property type.
 
 import { useState, useEffect, useCallback } from "react";
+// Import the local criteria definitions as a fallback.  The dynamic
+// criteria fetched from Supabase may not include a Bridge & Fusion
+// section, so we merge in the local configuration when necessary.
+import { CRITERIA_CONFIG as LOCAL_CRITERIA_CONFIG } from "../config/criteria";
 
 /**
  * Determine the maximum tier from an array of selected answers.  The
@@ -131,7 +135,18 @@ export function useCriteriaManagement(
    * Commercial, Semi-Commercial).
    */
   const determineCurrentCriteria = useCallback(() => {
-    if (!criteriaConfig) return null;
+    // If no dynamic config is provided, fall back entirely to the local configuration.
+    if (!criteriaConfig) {
+      if (
+        productType === "Bridge & Fusion"
+      ) {
+        return LOCAL_CRITERIA_CONFIG["Bridge & Fusion"] || null;
+      }
+      // fallback for property-based products
+      const localByType = LOCAL_CRITERIA_CONFIG[propertyType];
+      if (localByType) return localByType;
+      return LOCAL_CRITERIA_CONFIG["Residential"] || null;
+    }
     // When the main product type is Bridge, Fusion or the combined Bridge & Fusion
     // return that criteria section.  This allows us to treat "Bridge" and
     // "Fusion" as aliases for the combined Bridge & Fusion product when
@@ -142,21 +157,63 @@ export function useCriteriaManagement(
       productType === "Fusion" ||
       productType === "Bridge & Fusion"
     ) {
+      // Always prioritise the local Bridge & Fusion configuration.  This
+      // ensures the sub‑product options include a propertyType field
+      // for filtering.  If the local config is missing, fall back
+      // to the dynamic config.
+      const localBridge = LOCAL_CRITERIA_CONFIG["Bridge & Fusion"];
+      if (localBridge) return localBridge;
       return criteriaConfig["Bridge & Fusion"] || null;
     }
     // Otherwise, choose the criteria based on property type.  Fall back
     // to Residential if no exact match is found.
+    const configByType = criteriaConfig[propertyType] || null;
+    if (configByType) return configByType;
+    // Fall back to local configuration if dynamic config lacks the property type.
     return (
-      criteriaConfig[propertyType] || criteriaConfig["Residential"] || null
+      criteriaConfig["Residential"] ||
+      LOCAL_CRITERIA_CONFIG[propertyType] ||
+      LOCAL_CRITERIA_CONFIG["Residential"] ||
+      null
     );
   }, [productType, propertyType, criteriaConfig]);
 
   // Update the current criteria whenever product or property type changes
   useEffect(() => {
     const cc = determineCurrentCriteria();
-    setCurrentCriteria(cc);
+    // Filter sub‑product options based on the selected property type when
+    // using the Bridge & Fusion product.  The subProductType question
+    // includes a propertyType attribute on each option.  Only show
+    // residential options when the property type is Residential; otherwise
+    // show commercial/semi‑commercial options.  Dev Exit and
+    // Permitted/Light Dev appear in both categories and will be included
+    // accordingly.
+    let filteredCriteria = cc;
+    if (
+      cc &&
+      (productType === "Bridge" ||
+        productType === "Fusion" ||
+        productType === "Bridge & Fusion")
+    ) {
+      const propertyCategory =
+        propertyType === "Residential" ? "Residential" : "Commercial";
+      filteredCriteria = {
+        ...cc,
+        propertyQuestions: (cc.propertyQuestions || []).map((question) => {
+          if (question.key !== "subProductType") return question;
+          // Filter options by the propertyType attribute; if no propertyType
+          // attribute is provided on an option, it will be shown regardless.
+          const newOptions = (question.options || []).filter((opt) => {
+            if (!opt.propertyType) return true;
+            return opt.propertyType === propertyCategory;
+          });
+          return { ...question, options: newOptions };
+        }),
+      };
+    }
+    setCurrentCriteria(filteredCriteria);
     // Reset answers to defaults when switching criteria
-    const initial = initializeAnswers(cc);
+    const initial = initializeAnswers(filteredCriteria);
     setCriteria(initial);
   }, [determineCurrentCriteria]);
 

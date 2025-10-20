@@ -363,6 +363,28 @@ export const CRITERIA_CONFIG = {
         ],
       },
       {
+      key: "loanTerm",
+      label: "Loan Term (Bridge)",
+      options: [
+        { label: "3", tier: 1 },
+        { label: "4", tier: 1 },
+        { label: "5", tier: 1 },
+        { label: "6", tier: 1 },
+        { label: "7", tier: 1 },
+        { label: "8", tier: 1 },
+        { label: "9", tier: 1 },
+        { label: "10", tier: 1 },
+        { label: "11", tier: 1 },
+        { label: "12", tier: 1 },
+        { label: "13", tier: 1 },
+        { label: "14", tier: 1 },
+        { label: "15", tier: 1 },
+        { label: "16", tier: 1 },
+        { label: "17", tier: 1 },
+        { label: "18", tier: 1 },
+      ],
+    },
+      {
         key: "multiPropertyLoan",
         label: "Multi Property Loan",
         options: [

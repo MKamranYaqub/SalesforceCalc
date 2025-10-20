@@ -6,75 +6,94 @@ import {
   BRIDGE_SUB_PRODUCTS_COMM,
 } from '../config/bridgeFusionRates';
 
+/**
+ * Hook to manage state for Bridge & Fusion calculations.  It tracks
+ * inputs such as property value, gross loan, property type and
+ * sub‑product, computes results for each LTV bucket and identifies
+ * the best option by net loan.
+ */
 export function useBridgeFusionCalculator() {
-  const [selectedProduct, setSelectedProduct] = useState('Fusion'); // 'Fusion', 'Fixed Bridge', 'Variable Bridge'
+  // State for common inputs
   const [propertyValue, setPropertyValue] = useState('');
   const [grossLoan, setGrossLoan] = useState('');
-  const [propertyType, setPropertyType] = useState('Residential'); // or 'Semi-Commercial', etc.
+  const [propertyType, setPropertyType] = useState('Residential');
   const [subProduct, setSubProduct] = useState(BRIDGE_SUB_PRODUCTS_RESI[0]);
   const [rent, setRent] = useState('');
   const [topSlicing, setTopSlicing] = useState(false);
   const [results, setResults] = useState([]);
-  const [bestResult, setBestResult] = useState(null);
-  const [bbr, setBbr] = useState(5.25); // default base rate
+  const [bestResults, setBestResults] = useState({});
+  const [bbr, setBbr] = useState(5.25);
   const [overrideRate, setOverrideRate] = useState('');
+  const [arrangementPct, setArrangementPct] = useState(0.02);
+  const [deferredPct, setDeferredPct] = useState(0);
+  const [rolledMonths, setRolledMonths] = useState(0);
 
   useEffect(() => {
-    // Validate and compute whenever inputs change
     const pv = Number(propertyValue);
     const gross = Number(grossLoan);
     if (!pv || !gross || isNaN(pv) || isNaN(gross)) {
       setResults([]);
-      setBestResult(null);
+      setBestResults({});
       return;
     }
-
-    const kind =
-      selectedProduct === 'Fusion'
-        ? 'fusion'
-        : selectedProduct === 'Variable Bridge'
-        ? 'bridge-var'
-        : 'bridge-fix';
-
-    const isCommercial =
-      propertyType !== 'Residential' && propertyType !== 'Semi-Commercial' ? true : false;
-
-    const scenarios = LTV_BUCKETS.map((ltv) => {
+    // Determine if the property is commercial or semi-commercial.  In
+    // bridge & fusion we treat Semi-Commercial as residential for
+    // rental calculations, so only Full Commercial counts as
+    // commercial here.
+    const isComm = propertyType !== 'Residential' && propertyType !== 'Semi-Commercial';
+    // Define product names and mapping to solver kinds
+    const products = ['Fusion', 'Variable Bridge', 'Fixed Bridge'];
+    const kindMap = {
+      Fusion: 'fusion',
+      'Variable Bridge': 'bridge-var',
+      'Fixed Bridge': 'bridge-fix',
+    };
+    // Compute a row of results for each LTV bucket
+    const rows = LTV_BUCKETS.map((ltv) => {
       const grossLTV = (pv * ltv) / 100;
-      const solveInput = {
-        kind,
-        grossLoanInput: grossLTV,
-        propertyValue: pv,
-        subProduct,
-        isCommercial,
-        bbrPct: bbr,
-        overrideMonthly: overrideRate ? Number(overrideRate) : 0,
-        rentPm: Number(rent),
-        topSlicingPm: topSlicing ? Number(rent) : 0,
-      };
-      const calc = solveBridgeFusion(solveInput);
-      return {
-        ltv,
-        ...calc,
-      };
+      const row = { ltv };
+      products.forEach((prod) => {
+        const calc = solveBridgeFusion({
+          kind: kindMap[prod],
+          grossLoanInput: grossLTV,
+          propertyValue: pv,
+          subProduct,
+          isCommercial: isComm,
+          bbrPct: bbr,
+          overrideMonthly: overrideRate ? Number(overrideRate) : 0,
+          rentPm: Number(rent),
+          topSlicingPm: topSlicing ? Number(rent) : 0,
+          arrangementPct,
+          deferredPct,
+          rolledMonths,
+        });
+        row[prod] = calc;
+      });
+      return row;
     });
-
-    setResults(scenarios);
-    // Pick best by highest net loan
-    const best = scenarios.reduce((acc, cur) =>
-      !acc || cur.netLoanGBP > acc.netLoanGBP ? cur : acc,
-      null,
-    );
-    setBestResult(best);
-  }, [selectedProduct, propertyValue, grossLoan, propertyType, subProduct, rent, topSlicing, bbr, overrideRate]);
-
-  // Determine available sub-products depending on property type
+    setResults(rows);
+    // Determine the best row for each product by highest net loan
+    const best = {};
+    products.forEach((prod) => {
+      let bestRow = null;
+      rows.forEach((row) => {
+        if (!bestRow || row[prod].netLoanGBP > bestRow[prod].netLoanGBP) {
+          bestRow = row;
+        }
+      });
+      if (bestRow) {
+        best[prod] = {
+          ltv: bestRow.ltv,
+          ...bestRow[prod],
+        };
+      }
+    });
+    setBestResults(best);
+  }, [propertyValue, grossLoan, propertyType, subProduct, rent, topSlicing, bbr, overrideRate, arrangementPct, deferredPct, rolledMonths]);
   const subProductOptions =
     propertyType === 'Residential' ? BRIDGE_SUB_PRODUCTS_RESI : BRIDGE_SUB_PRODUCTS_COMM;
-
   return {
-    selectedProduct,
-    setSelectedProduct,
+    // Input values
     propertyValue,
     setPropertyValue,
     grossLoan,
@@ -92,7 +111,14 @@ export function useBridgeFusionCalculator() {
     setBbr,
     overrideRate,
     setOverrideRate,
+    arrangementPct,
+    setArrangementPct,
+    deferredPct,
+    setDeferredPct,
+    rolledMonths,
+    setRolledMonths,
+    // Outputs
     results,
-    bestResult,
+    bestResults,
   };
 }
