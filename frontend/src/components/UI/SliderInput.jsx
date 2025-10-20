@@ -4,7 +4,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-export const SliderInput = ({ label, min, max, step, value, onChange, formatValue, style }) => (
+export const SliderInput = ({ 
+  label = '', 
+  min, 
+  max, 
+  step, 
+  value, 
+  onChange, 
+  formatValue = null, 
+  style = {} 
+}) => (
   <div style={style}>
     {label && <div style={{ fontSize: 12, marginBottom: 4 }}>{label}</div>}
     <input
@@ -31,10 +40,4 @@ SliderInput.propTypes = {
   onChange: PropTypes.func.isRequired,
   formatValue: PropTypes.func,
   style: PropTypes.object,
-};
-
-SliderInput.defaultProps = {
-  label: '',
-  formatValue: null,
-  style: {},
 };

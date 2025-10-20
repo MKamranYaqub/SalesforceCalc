@@ -7,7 +7,7 @@ import { formatCurrency } from '../utils/formatters';
 import { LOAN_TYPES } from '../config/constants';
 
 export const SummarySection = ({
-  bestSummary,
+  bestSummary = null,
   loanTypeRequired,
   productType,
   tier,
@@ -83,8 +83,4 @@ SummarySection.propTypes = {
   loanTypeRequired: PropTypes.string.isRequired,
   productType: PropTypes.string.isRequired,
   tier: PropTypes.string.isRequired,
-};
-
-SummarySection.defaultProps = {
-  bestSummary: null,
 };

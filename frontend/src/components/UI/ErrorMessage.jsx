@@ -4,7 +4,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-export const ErrorMessage = ({ error }) => {
+export const ErrorMessage = ({ error = null }) => {
   if (!error) return null;
 
   return (
@@ -28,8 +28,4 @@ export const ErrorMessage = ({ error }) => {
 
 ErrorMessage.propTypes = {
   error: PropTypes.string,
-};
-
-ErrorMessage.defaultProps = {
-  error: null,
 };

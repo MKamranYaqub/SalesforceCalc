@@ -1,5 +1,5 @@
 /**
- * Main application component with BTL and Bridge & Fusion calculators
+ * Main application component with BTL calculators
  */
 import React, { useState, useMemo, useEffect } from 'react';
 import { useProductSelection } from './hooks/useProductSelection';
@@ -18,7 +18,6 @@ import { ProductGroupToggle } from './components/ProductGroupToggle';
 import { EmailResultsModal } from './components/EmailResultsModal';
 import { SaveCalculationButton } from './components/SaveCalculationButton';
 import { CaseLookup } from './components/CaseLookup';
-import BridgeFusionCalculator from './components/BridgeFusionCalculator';
 import { parseNumber, formatCurrency } from './utils/formatters';
 import { selectRateSource, getFeeColumns, getMaxLTV } from './utils/rateSelectors';
 import { computeColumnData } from './utils/calculationEngine';
@@ -587,86 +586,7 @@ function App() {
         top: 0,
         zIndex: 1000,
       }}>
-        <div style={{
-          maxWidth: '1400px',
-          margin: '0 auto',
-          padding: '0 24px',
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            height: '64px',
-          }}>
-            {/* Logo/Title */}
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <h1 style={{
-                fontSize: '24px',
-                fontWeight: 700,
-                color: '#0f172a',
-                margin: 0,
-              }}>
-                Loan Calculator Suite
-              </h1>
-            </div>
-
-            {/* Calculator Navigation */}
-            <nav style={{ display: 'flex', gap: '12px' }}>
-              <button
-                onClick={() => setActiveCalculator('btl')}
-                style={{
-                  padding: '10px 20px',
-                  borderRadius: '8px',
-                  fontSize: '15px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  border: 'none',
-                  transition: 'all 0.2s ease',
-                  background: activeCalculator === 'btl' ? '#008891' : '#f1f5f9',
-                  color: activeCalculator === 'btl' ? '#fff' : '#475569',
-                }}
-                onMouseOver={(e) => {
-                  if (activeCalculator !== 'btl') {
-                    e.target.style.background = '#e2e8f0';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (activeCalculator !== 'btl') {
-                    e.target.style.background = '#f1f5f9';
-                  }
-                }}
-              >
-                🏠 BTL Calculator
-              </button>
-              <button
-                onClick={() => setActiveCalculator('bridge-fusion')}
-                style={{
-                  padding: '10px 20px',
-                  borderRadius: '8px',
-                  fontSize: '15px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  border: 'none',
-                  transition: 'all 0.2s ease',
-                  background: activeCalculator === 'bridge-fusion' ? '#008891' : '#f1f5f9',
-                  color: activeCalculator === 'bridge-fusion' ? '#fff' : '#475569',
-                }}
-                onMouseOver={(e) => {
-                  if (activeCalculator !== 'bridge-fusion') {
-                    e.target.style.background = '#e2e8f0';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (activeCalculator !== 'bridge-fusion') {
-                    e.target.style.background = '#f1f5f9';
-                  }
-                }}
-              >
-                🌉 Bridge & Fusion
-              </button>
-            </nav>
-          </div>
-        </div>
+        
       </header>
 
       {/* Calculator Content */}

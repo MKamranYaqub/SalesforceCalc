@@ -5,15 +5,15 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
 export const CurrencyInput = ({ 
-  label, 
+  label = '', 
   value, 
   onChange, 
-  onBlur,
-  placeholder, 
-  error,
+  onBlur = null,
+  placeholder = '', 
+  error = false,
   required = false,
-  min,
-  max,
+  min = undefined,
+  max = undefined,
 }) => {
   const [displayValue, setDisplayValue] = useState(formatDisplay(value));
 
@@ -104,14 +104,4 @@ CurrencyInput.propTypes = {
   required: PropTypes.bool,
   min: PropTypes.number,
   max: PropTypes.number,
-};
-
-CurrencyInput.defaultProps = {
-  label: '',
-  onBlur: null,
-  placeholder: '',
-  error: false,
-  required: false,
-  min: undefined,
-  max: undefined,
 };
