@@ -653,7 +653,7 @@ function App() {
           Render the standard BTL calculator when the main product type is BTL.
           For Bridge or Fusion selections, we show the Bridge & Fusion inputs instead.
         */}
-        {mainProductType !== 'Bridge' && mainProductType !== 'Fusion' && (
+        
           <div className="app-container">
             {/* Case Lookup Section */}
             <CaseLookup onCaseLoaded={handleCaseLoaded} />
