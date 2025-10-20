@@ -64,9 +64,8 @@ export const ProductSetup = ({
             }}
           >
             <option value="BTL">BTL</option>
-            <option value="Bridge" disabled>Bridge (Coming Soon)</option>
-            <option value="Fusion" disabled>Fusion (Coming Soon)</option>
-          </select>
+            <option value="Bridge">Bridge & Fusion</option>
+            </select>
         </div>
 
         {/* Property Type Dropdown */}

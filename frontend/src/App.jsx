@@ -1,5 +1,5 @@
 /**
- * Main application component with BTL calculators
+ * Main application component with BTL, Bridge & Fusion calculators
  */
 import React, { useState, useMemo, useEffect } from 'react';
 import { useProductSelection } from './hooks/useProductSelection';
@@ -18,36 +18,46 @@ import { ProductGroupToggle } from './components/ProductGroupToggle';
 import { EmailResultsModal } from './components/EmailResultsModal';
 import { SaveCalculationButton } from './components/SaveCalculationButton';
 import { CaseLookup } from './components/CaseLookup';
+import { BridgeFusionCalculator } from './components/BridgeFusionCalculator';
 import { parseNumber, formatCurrency } from './utils/formatters';
 import { selectRateSource, getFeeColumns, getMaxLTV } from './utils/rateSelectors';
 import { computeColumnData } from './utils/calculationEngine';
 import { LOAN_LIMITS } from './config/loanLimits';
-import { PRODUCT_TYPES_LIST, PRODUCT_GROUPS, LOAN_TYPES, PROPERTY_TYPES } from './config/constants';
+import {
+  PRODUCT_TYPES_LIST,
+  PRODUCT_GROUPS,
+  LOAN_TYPES,
+  PROPERTY_TYPES,
+} from './config/constants';
 import './styles/styles.css';
 
 function App() {
   // ============================================
   // CALCULATOR NAVIGATION STATE
   // ============================================
-  const [activeCalculator, setActiveCalculator] = useState('btl'); // 'btl' or 'bridge-fusion'
+  // NOTE: We no longer use a separate activeCalculator state. Instead, we
+  // determine which UI to render based on mainProductType directly. This
+  // ensures that selecting Bridge or Fusion updates the criteria and inputs
+  // without navigating away to a completely different calculator view.
+  const [activeCalculator, setActiveCalculator] = useState('btl');
 
   // ============================================
   // 1. ALL HOOKS MUST BE CALLED FIRST (before any conditional returns)
   // ============================================
-  
+
   // Load criteria from Supabase
-  const { 
-    criteriaConfig, 
-    coreCriteriaConfig, 
-    loading: criteriaLoading, 
+  const {
+    criteriaConfig,
+    coreCriteriaConfig,
+    loading: criteriaLoading,
     error: criteriaError,
-    reload: reloadCriteria 
+    reload: reloadCriteria,
   } = useDynamicCriteria();
 
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [userAccessLevel] = useState('web_customer');
   const [loadedCaseReference, setLoadedCaseReference] = useState(null);
-  
+
   const productSelection = useProductSelection();
   const {
     mainProductType,
@@ -64,12 +74,20 @@ function App() {
     setProductGroup,
   } = productSelection;
 
-  const criteriaManagement = useCriteriaManagement(propertyType, criteriaConfig, coreCriteriaConfig);
-  const { 
-    criteria, 
-    setCriteria, 
-    tier, 
-    getCurrentCriteria, 
+  // Pass the main product type to criteria management.  The hook will
+  // internally treat both "Bridge" and "Fusion" as aliases of the
+  // combined Bridge & Fusion product for criteria selection.
+  const criteriaManagement = useCriteriaManagement(
+    propertyType,
+    mainProductType,
+    criteriaConfig,
+    coreCriteriaConfig,
+  );
+  const {
+    criteria,
+    setCriteria,
+    tier,
+    getCurrentCriteria,
     isWithinCoreCriteria,
     initializeCriteriaState,
   } = criteriaManagement;
@@ -165,38 +183,40 @@ function App() {
   const allColumnData = useMemo(() => {
     if (!canShowMatrix) return [];
     const pv = parseNumber(propertyValue);
-    return feeColumns.map((colKey) => {
-      const manual = manualSettings[colKey];
-      const overriddenRate = rateOverrides[colKey];
-      const data = computeColumnData({
-        colKey,
-        manualRolled: manual?.rolledMonths,
-        manualDeferred: manual?.deferredPct,
-        overriddenRate,
-        selected,
-        propertyValue,
-        monthlyRent,
-        specificNetLoan,
-        specificGrossLoan,
-        specificLTV,
-        loanTypeRequired,
-        productType,
-        tier,
-        criteria,
-        propertyType,
-        productGroup,
-        isRetention,
-        retentionLtv,
-        effectiveProcFeePct,
-        brokerFeePct,
-        brokerFeeFlat,
-        feeOverrides,
-        limits,
-      });
-      if (!data) return null;
-      const netLtv = pv ? data.net / pv : null;
-      return { colKey, netLtv, ...data };
-    }).filter(Boolean);
+    return feeColumns
+      .map((colKey) => {
+        const manual = manualSettings[colKey];
+        const overriddenRate = rateOverrides[colKey];
+        const data = computeColumnData({
+          colKey,
+          manualRolled: manual?.rolledMonths,
+          manualDeferred: manual?.deferredPct,
+          overriddenRate,
+          selected,
+          propertyValue,
+          monthlyRent,
+          specificNetLoan,
+          specificGrossLoan,
+          specificLTV,
+          loanTypeRequired,
+          productType,
+          tier,
+          criteria,
+          propertyType,
+          productGroup,
+          isRetention,
+          retentionLtv,
+          effectiveProcFeePct,
+          brokerFeePct,
+          brokerFeeFlat,
+          feeOverrides,
+          limits,
+        });
+        if (!data) return null;
+        const netLtv = pv ? data.net / pv : null;
+        return { colKey, netLtv, ...data };
+      })
+      .filter(Boolean);
   }, [
     canShowMatrix,
     feeColumns,
@@ -258,39 +278,42 @@ function App() {
     return selected?.isMargin ? limits.MAX_DEFERRED_TRACKER : limits.MAX_DEFERRED_FIX;
   }, [selected, limits]);
 
-  const calculationData = useMemo(() => ({
-    propertyValue: parseNumber(propertyValue),
-    monthlyRent: parseNumber(monthlyRent),
-    propertyType,
-    productType,
-    productGroup,
-    tier,
-    isRetention,
-    retentionLtv,
-    loanTypeRequired,
-    specificNetLoan: parseNumber(specificNetLoan),
-    specificGrossLoan: parseNumber(specificGrossLoan),
-    specificLTV,
-    procFeePct: effectiveProcFeePct,
-    brokerFeePct: brokerFeePct ? parseNumber(brokerFeePct) : null,
-    brokerFeeFlat: brokerFeeFlat ? parseNumber(brokerFeeFlat) : null,
-  }), [
-    propertyValue,
-    monthlyRent,
-    propertyType,
-    productType,
-    productGroup,
-    tier,
-    isRetention,
-    retentionLtv,
-    loanTypeRequired,
-    specificNetLoan,
-    specificGrossLoan,
-    specificLTV,
-    effectiveProcFeePct,
-    brokerFeePct,
-    brokerFeeFlat,
-  ]);
+  const calculationData = useMemo(
+    () => ({
+      propertyValue: parseNumber(propertyValue),
+      monthlyRent: parseNumber(monthlyRent),
+      propertyType,
+      productType,
+      productGroup,
+      tier,
+      isRetention,
+      retentionLtv,
+      loanTypeRequired,
+      specificNetLoan: parseNumber(specificNetLoan),
+      specificGrossLoan: parseNumber(specificGrossLoan),
+      specificLTV,
+      procFeePct: effectiveProcFeePct,
+      brokerFeePct: brokerFeePct ? parseNumber(brokerFeePct) : null,
+      brokerFeeFlat: brokerFeeFlat ? parseNumber(brokerFeeFlat) : null,
+    }),
+    [
+      propertyValue,
+      monthlyRent,
+      propertyType,
+      productType,
+      productGroup,
+      tier,
+      isRetention,
+      retentionLtv,
+      loanTypeRequired,
+      specificNetLoan,
+      specificGrossLoan,
+      specificLTV,
+      effectiveProcFeePct,
+      brokerFeePct,
+      brokerFeeFlat,
+    ],
+  );
 
   // Reset criteria when property type changes
   useEffect(() => {
@@ -306,6 +329,10 @@ function App() {
     }
   }, [isWithinCoreCriteria, productGroup, setProductGroup]);
 
+  // We no longer switch calculators based on main product type. Instead, we
+  // conditionally render the Bridge & Fusion inputs below based on
+  // mainProductType directly in the JSX.
+
   // ============================================
   // 2. NOW CONDITIONAL RENDERING (after all hooks)
   // ============================================
@@ -313,50 +340,60 @@ function App() {
   // Show loading state while criteria loads
   if (criteriaLoading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#f1f5f9',
-        padding: '20px',
-      }}>
-        <div style={{
-          textAlign: 'center',
-          padding: '40px',
-          background: '#fff',
-          borderRadius: '12px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-          maxWidth: '500px',
-          width: '100%',
-        }}>
-          <div style={{ 
-            fontSize: '48px', 
-            marginBottom: '16px',
-            animation: 'pulse 1.5s ease-in-out infinite',
-          }}>
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#f1f5f9',
+          padding: '20px',
+        }}
+      >
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '40px',
+            background: '#fff',
+            borderRadius: '12px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            maxWidth: '500px',
+            width: '100%',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '48px',
+              marginBottom: '16px',
+              animation: 'pulse 1.5s ease-in-out infinite',
+            }}
+          >
             ⏳
           </div>
-          <div style={{ 
-            fontSize: '20px', 
-            fontWeight: 600, 
-            color: '#0f172a',
-            marginBottom: '8px',
-          }}>
+          <div
+            style={{
+              fontSize: '20px',
+              fontWeight: 600,
+              color: '#0f172a',
+              marginBottom: '8px',
+            }}
+          >
             Loading Configuration...
           </div>
-          <div style={{ 
-            fontSize: '14px', 
-            color: '#64748b',
-          }}>
+          <div
+            style={{
+              fontSize: '14px',
+              color: '#64748b',
+            }}
+          >
             Fetching criteria and rates from database
           </div>
           <style>{`
-            @keyframes pulse {
-              0%, 100% { opacity: 1; transform: scale(1); }
-              50% { opacity: 0.5; transform: scale(0.95); }
-            }
-          `}</style>
+             @keyframes pulse {
+               0%, 100% { opacity: 1; transform: scale(1); }
+               50% { opacity: 0.5; transform: scale(0.95); }
+             }
+           `}</style>
         </div>
       </div>
     );
@@ -365,66 +402,80 @@ function App() {
   // Show error state
   if (criteriaError) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#f1f5f9',
-        padding: '20px',
-      }}>
-        <div style={{
-          textAlign: 'center',
-          padding: '40px',
-          background: '#fff',
-          border: '2px solid #ef4444',
-          borderRadius: '12px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-          maxWidth: '600px',
-          width: '100%',
-        }}>
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#f1f5f9',
+          padding: '20px',
+        }}
+      >
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '40px',
+            background: '#fff',
+            border: '2px solid #ef4444',
+            borderRadius: '12px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            maxWidth: '600px',
+            width: '100%',
+          }}
+        >
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>❌</div>
-          <div style={{ 
-            fontSize: '20px', 
-            fontWeight: 600, 
-            color: '#0f172a', 
-            marginBottom: '12px',
-          }}>
+          <div
+            style={{
+              fontSize: '20px',
+              fontWeight: 600,
+              color: '#0f172a',
+              marginBottom: '12px',
+            }}
+          >
             Failed to Load Configuration
           </div>
-          <div style={{ 
-            fontSize: '14px', 
-            color: '#64748b', 
-            marginBottom: '8px',
-            padding: '12px',
-            background: '#fef2f2',
-            border: '1px solid #fecaca',
-            borderRadius: '6px',
-          }}>
+          <div
+            style={{
+              fontSize: '14px',
+              color: '#64748b',
+              marginBottom: '8px',
+              padding: '12px',
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: '6px',
+            }}
+          >
             <strong>Error:</strong> {criteriaError}
           </div>
-          <div style={{ 
-            fontSize: '13px', 
-            color: '#64748b', 
-            marginBottom: '20px',
-          }}>
+          <div
+            style={{
+              fontSize: '13px',
+              color: '#64748b',
+              marginBottom: '20px',
+            }}
+          >
             Please check that:
-            <ul style={{ 
-              textAlign: 'left', 
-              marginTop: '8px',
-              paddingLeft: '20px',
-            }}>
+            <ul
+              style={{
+                textAlign: 'left',
+                marginTop: '8px',
+                paddingLeft: '20px',
+              }}
+            >
               <li>Backend server is running on port 3001</li>
               <li>Supabase credentials are configured correctly</li>
               <li>Database tables have been created</li>
               <li>Migration script has been run</li>
             </ul>
           </div>
-          <div style={{ 
-            display: 'flex', 
-            gap: '12px', 
-            justifyContent: 'center',
-          }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'center',
+            }}
+          >
             <button
               onClick={() => window.location.reload()}
               style={{
@@ -438,8 +489,8 @@ function App() {
                 fontWeight: 600,
                 transition: 'all 0.2s ease',
               }}
-              onMouseOver={(e) => e.target.style.background = '#006b73'}
-              onMouseOut={(e) => e.target.style.background = '#008891'}
+              onMouseOver={(e) => (e.target.style.background = '#006b73')}
+              onMouseOut={(e) => (e.target.style.background = '#008891')}
             >
               🔄 Reload Page
             </button>
@@ -456,8 +507,8 @@ function App() {
                 fontWeight: 600,
                 transition: 'all 0.2s ease',
               }}
-              onMouseOver={(e) => e.target.style.background = '#e2e8f0'}
-              onMouseOut={(e) => e.target.style.background = '#f1f5f9'}
+              onMouseOver={(e) => (e.target.style.background = '#e2e8f0')}
+              onMouseOut={(e) => (e.target.style.background = '#f1f5f9')}
             >
               🔁 Retry Loading
             </button>
@@ -474,88 +525,93 @@ function App() {
   // Handle case loaded from lookup
   const handleCaseLoaded = (caseData) => {
     console.log('📥 Loading case data:', caseData);
-    
+
     setLoadedCaseReference(caseData.case_reference);
-    
+
     const calc = caseData.calculation_data || caseData;
-    
+
     if (calc.propertyType || caseData.property_type) {
       setPropertyType(calc.propertyType || caseData.property_type);
     }
-    
+
     if (calc.propertyValue || caseData.property_value) {
       setPropertyValue(String(calc.propertyValue || caseData.property_value));
     }
-    
+
     if (calc.monthlyRent || caseData.monthly_rent) {
       setMonthlyRent(String(calc.monthlyRent || caseData.monthly_rent));
     }
-    
+
     if (calc.productType || caseData.product_type) {
       setProductType(calc.productType || caseData.product_type);
     }
-    
+
     if (calc.productGroup || caseData.product_group) {
       setProductGroup(calc.productGroup || caseData.product_group);
     }
-    
-    const isRet = calc.isRetention === 'Yes' || calc.isRetention === true || caseData.is_retention === true;
+
+    const isRet =
+      calc.isRetention === 'Yes' ||
+      calc.isRetention === true ||
+      caseData.is_retention === true;
     setIsRetention(isRet ? 'Yes' : 'No');
-    
+
     if (calc.retentionLtv || caseData.retention_ltv) {
       setRetentionLtv(String(calc.retentionLtv || caseData.retention_ltv));
     }
-    
+
     if (calc.loanTypeRequired || caseData.loan_type_required) {
       setLoanTypeRequired(calc.loanTypeRequired || caseData.loan_type_required);
     }
-    
+
     if (calc.specificNetLoan || caseData.specific_net_loan) {
       const netLoan = calc.specificNetLoan || caseData.specific_net_loan;
       if (netLoan && netLoan !== 0) {
         setSpecificNetLoan(String(netLoan));
       }
     }
-    
+
     if (calc.specificGrossLoan || caseData.specific_gross_loan) {
       const grossLoan = calc.specificGrossLoan || caseData.specific_gross_loan;
       if (grossLoan && grossLoan !== 0) {
         setSpecificGrossLoan(String(grossLoan));
       }
     }
-    
+
     if (calc.specificLTV || caseData.specific_ltv) {
       const ltv = calc.specificLTV || caseData.specific_ltv;
       if (ltv && ltv !== 0) {
         setSpecificLTV(Number(ltv));
       }
     }
-    
+
     if (calc.procFeePct || caseData.proc_fee_pct) {
       setProcFeePctInput(String(calc.procFeePct || caseData.proc_fee_pct));
     }
-    
+
     if (calc.brokerFeePct || caseData.broker_fee_pct) {
       setBrokerFeePct(String(calc.brokerFeePct || caseData.broker_fee_pct));
     }
-    
+
     if (calc.brokerFeeFlat || caseData.broker_fee_flat) {
       setBrokerFeeFlat(String(calc.brokerFeeFlat || caseData.broker_fee_flat));
     }
-    
+
     if (calc.criteria) {
       console.log('📋 Loading criteria:', calc.criteria);
       setCriteria(calc.criteria);
     }
-    
+
     console.log('✅ Case data loaded into form');
-    
+
     setTimeout(() => {
-      alert(`✅ Case ${caseData.case_reference} loaded successfully!\n\n` +
-            `Property: £${(calc.propertyValue || caseData.property_value)?.toLocaleString()}\n` +
-            `Rent: £${(calc.monthlyRent || caseData.monthly_rent)?.toLocaleString()}\n` +
-            `Product: ${calc.productType || caseData.product_type}\n` +
-            `Group: ${calc.productGroup || caseData.product_group}`);
+      alert(
+        `✅ Case ${caseData.case_reference} loaded successfully!\n\n` +
+          `Property: £${(calc.propertyValue || caseData.property_value)?.toLocaleString()}\n` +
+          `Rent: £${(calc.monthlyRent || caseData.monthly_rent)?.toLocaleString()}\n` +
+          `Product: ${calc.productType || caseData.product_type}\n` +
+          `Group: ${calc.productGroup || caseData.product_group}`,
+      );
     }, 100);
   };
 
@@ -578,58 +634,68 @@ function App() {
   return (
     <div style={{ minHeight: '100vh', background: '#f1f5f9' }}>
       {/* Navigation Header */}
-      <header style={{
-        background: '#fff',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        borderBottom: '1px solid #e2e8f0',
-        position: 'sticky',
-        top: 0,
-        zIndex: 1000,
-      }}>
-        
+      <header
+        style={{
+          background: '#fff',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          borderBottom: '1px solid #e2e8f0',
+          position: 'sticky',
+          top: 0,
+          zIndex: 1000,
+        }}
+      >
+        {/* Header content could go here if needed */}
       </header>
 
       {/* Calculator Content */}
       <main>
-        {activeCalculator === 'btl' && (
+        {/*
+          Render the standard BTL calculator when the main product type is BTL.
+          For Bridge or Fusion selections, we show the Bridge & Fusion inputs instead.
+        */}
+        {mainProductType !== 'Bridge' && mainProductType !== 'Fusion' && (
           <div className="app-container">
             {/* Case Lookup Section */}
             <CaseLookup onCaseLoaded={handleCaseLoaded} />
 
             {/* New Calculation Button */}
             {loadedCaseReference && (
-              <div style={{
-                gridColumn: "1 / -1",
-                padding: "12px",
-                background: "#fff7ed",
-                border: "1px solid #fed7aa",
-                borderRadius: "8px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "12px",
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ fontSize: "18px" }}>📝</span>
-                  <span style={{ fontSize: "14px", color: "#7c2d12", fontWeight: 600 }}>
+              <div
+                style={{
+                  gridColumn: '1 / -1',
+                  padding: '12px',
+                  background: '#fff7ed',
+                  border: '1px solid #fed7aa',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '18px' }}>📝</span>
+                  <span
+                    style={{ fontSize: '14px', color: '#7c2d12', fontWeight: 600 }}
+                  >
                     Editing: <strong>{loadedCaseReference}</strong>
                   </span>
                 </div>
                 <button
                   onClick={handleNewCalculation}
                   style={{
-                    padding: "8px 16px",
-                    background: "#f1f5f9",
-                    color: "#0f172a",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: "6px",
-                    fontSize: "13px",
+                    padding: '8px 16px',
+                    background: '#f1f5f9',
+                    color: '#0f172a',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                    fontSize: '13px',
                     fontWeight: 600,
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
                   }}
-                  onMouseOver={(e) => e.target.style.background = "#e2e8f0"}
-                  onMouseOut={(e) => e.target.style.background = "#f1f5f9"}
+                  onMouseOver={(e) => (e.target.style.background = '#e2e8f0')}
+                  onMouseOut={(e) => (e.target.style.background = '#f1f5f9')}
                 >
                   ➕ New Calculation
                 </button>
@@ -650,15 +716,34 @@ function App() {
 
             <CriteriaSection
               isOpen={openSections.criteria}
-              onToggle={() => setOpenSections((s) => ({ ...s, criteria: !s.criteria }))}
-              currentCriteria={getCurrentCriteria()}
-              criteria={criteria}
+              onToggle={() =>
+                setOpenSections((s) => ({ ...s, criteria: !s.criteria }))
+              }
+              // Provide a safe fallback for currentCriteria.  If
+              // getCurrentCriteria returns null or undefined (for example
+              // while Supabase criteria are still loading), supply an
+              // object with empty question arrays.  This prevents
+              // CriteriaSection from attempting to access properties on
+              // undefined and throwing an error.
+              currentCriteria={
+                getCurrentCriteria() || {
+                  propertyQuestions: [],
+                  applicantQuestions: [],
+                }
+              }
+              // Ensure criteria is never undefined.  Fall back to an empty
+              // object so that CriteriaSection always receives a defined
+              // prop.  Without this guard, the component may attempt to
+              // access properties on undefined during initial render.
+              criteria={criteria || {}}
               setCriteria={setCriteria}
             />
 
             <PropertyProductSection
               isOpen={openSections.property}
-              onToggle={() => setOpenSections((s) => ({ ...s, property: !s.property }))}
+              onToggle={() =>
+                setOpenSections((s) => ({ ...s, property: !s.property }))
+              }
               propertyValue={propertyValue}
               setPropertyValue={setPropertyValue}
               monthlyRent={monthlyRent}
@@ -771,23 +856,23 @@ function App() {
                 <button
                   onClick={() => setShowEmailModal(true)}
                   style={{
-                    gridColumn: "1 / -1",
-                    padding: "16px 32px",
-                    background: "#008891",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "16px",
+                    gridColumn: '1 / -1',
+                    padding: '16px 32px',
+                    background: '#008891',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '16px',
                     fontWeight: 600,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px",
-                    transition: "all 0.2s ease",
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    transition: 'all 0.2s ease',
                   }}
-                  onMouseOver={(e) => e.target.style.background = "#006b73"}
-                  onMouseOut={(e) => e.target.style.background = "#008891"}
+                  onMouseOver={(e) => (e.target.style.background = '#006b73')}
+                  onMouseOut={(e) => (e.target.style.background = '#008891')}
                 >
                   📧 Email Results
                 </button>
@@ -803,9 +888,16 @@ function App() {
           </div>
         )}
 
-        {activeCalculator === 'bridge-fusion' && (
-          <BridgeFusionCalculator />
-        )}
+        {/*
+          When Bridge or Fusion is selected the criteria questions are
+          dynamically adjusted via useCriteriaManagement.  We no longer
+          render a separate BridgeFusionCalculator here to avoid
+          navigating away from the main BTL layout.  Instead, the
+          Property & Product section should be extended to show inputs
+          specific to Bridge & Fusion loans (e.g. gross loan, sub‑product,
+          monthly rent).  For now we suppress rendering the standalone
+          calculator so that only the existing sections remain visible.
+        */}
       </main>
     </div>
   );
