@@ -17,7 +17,7 @@ import {
   calculateBridgeLoan,
   validateCalculationInputs,
   formatCurrency
-} from './bridgeFusionCalculations';
+} from '../utils/bridgeFusionCalculations';
 
 export const useBridgeFusionCalculator = () => {
   // Core product selection

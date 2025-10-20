@@ -1,159 +1,151 @@
 /**
- * Bridge & Fusion Rate Configurations
- * Based on the provided rate sheets
+ * Bridge & Fusion Rate Structures
+ * All rates and configurations for Bridge and Fusion loan products
  */
 
-// FUSION RATES
+// Fusion Rates (Annual rates + BBR tracker)
 export const FUSION_RATES = {
   Residential: {
-    S: {
-      60: 0.0084, // 0.84% monthly
-      70: 0.0094,
-      75: 0.0099
+    60: {
+      S: { rate: 5.29, arrangementFee: 2.0, minLoan: 100000, maxLoan: 500000 },
+      M: { rate: 5.19, arrangementFee: 2.0, minLoan: 500001, maxLoan: 2000000 },
+      L: { rate: 5.09, arrangementFee: 2.0, minLoan: 2000001, maxLoan: 20000000 }
     },
-    M: {
-      60: 0.0079,
-      70: 0.0089,
-      75: 0.0094
+    70: {
+      S: { rate: 5.49, arrangementFee: 2.0, minLoan: 100000, maxLoan: 500000 },
+      M: { rate: 5.39, arrangementFee: 2.0, minLoan: 500001, maxLoan: 2000000 },
+      L: { rate: 5.29, arrangementFee: 2.0, minLoan: 2000001, maxLoan: 20000000 }
     },
-    L: {
-      60: 0.0074,
-      70: 0.0084,
-      75: 0.0089
+    75: {
+      S: { rate: 5.69, arrangementFee: 2.0, minLoan: 100000, maxLoan: 500000 },
+      M: { rate: 5.59, arrangementFee: 2.0, minLoan: 500001, maxLoan: 2000000 },
+      L: { rate: 5.49, arrangementFee: 2.0, minLoan: 2000001, maxLoan: 20000000 }
     }
   },
   Commercial: {
-    S: {
-      60: 0.0099,
-      70: 0.0109,
-      75: 0.0114
+    60: {
+      S: { rate: 5.49, arrangementFee: 2.0, minLoan: 100000, maxLoan: 500000 },
+      M: { rate: 5.39, arrangementFee: 2.0, minLoan: 500001, maxLoan: 2000000 },
+      L: { rate: 5.29, arrangementFee: 2.0, minLoan: 2000001, maxLoan: 20000000 }
     },
-    M: {
-      60: 0.0094,
-      70: 0.0104,
-      75: 0.0109
+    70: {
+      S: { rate: 5.69, arrangementFee: 2.0, minLoan: 100000, maxLoan: 500000 },
+      M: { rate: 5.59, arrangementFee: 2.0, minLoan: 500001, maxLoan: 2000000 },
+      L: { rate: 5.49, arrangementFee: 2.0, minLoan: 2000001, maxLoan: 20000000 }
     },
-    L: {
-      60: 0.0089,
-      70: 0.0099,
-      75: 0.0104
+    75: {
+      S: { rate: 5.89, arrangementFee: 2.0, minLoan: 100000, maxLoan: 500000 },
+      M: { rate: 5.79, arrangementFee: 2.0, minLoan: 500001, maxLoan: 2000000 },
+      L: { rate: 5.69, arrangementFee: 2.0, minLoan: 2000001, maxLoan: 20000000 }
     }
   }
 };
 
-// VARIABLE BRIDGE RATES (Monthly Rates)
+// Variable Bridge Rates (Monthly rates + BBR)
 export const VARIABLE_BRIDGE_RATES = {
   'Resi BTL single unit': {
-    60: 0.0074,
-    70: 0.0084,
-    75: 0.0089
+    60: { rate: 0.40, arrangementFee: 2.0, minLoan: 100000, maxLoan: 4000000 },
+    70: { rate: 0.50, arrangementFee: 2.0, minLoan: 100000, maxLoan: 4000000 },
+    75: { rate: 0.60, arrangementFee: 2.0, minLoan: 100000, maxLoan: 4000000 }
   },
   'Resi Large Loan': {
-    60: 0.0069,
-    70: 0.0079,
-    75: 0.0084
+    60: { rate: 0.50, arrangementFee: 2.0, minLoan: 4000001, maxLoan: 20000000 },
+    70: { rate: 0.60, arrangementFee: 2.0, minLoan: 4000001, maxLoan: 20000000 },
+    75: { rate: 0.70, arrangementFee: 2.0, minLoan: 4000001, maxLoan: 20000000 }
   },
   'Resi Portfolio': {
-    60: 0.0069,
-    70: 0.0079,
-    75: 0.0084
+    60: { rate: 0.45, arrangementFee: 2.0, minLoan: 100000, maxLoan: 50000000 },
+    70: { rate: 0.55, arrangementFee: 2.0, minLoan: 100000, maxLoan: 50000000 },
+    75: { rate: 0.65, arrangementFee: 2.0, minLoan: 100000, maxLoan: 50000000 }
   },
-  'Dev Exit': {
-    60: 0.0074,
-    70: 0.0084,
-    75: 0.0089
+  'HMO': {
+    60: { rate: 0.50, arrangementFee: 2.0, minLoan: 100000, maxLoan: 5000000 },
+    70: { rate: 0.60, arrangementFee: 2.0, minLoan: 100000, maxLoan: 5000000 },
+    75: { rate: 0.70, arrangementFee: 2.0, minLoan: 100000, maxLoan: 5000000 }
   },
-  'Permitted/Light Dev': {
-    60: 0.0089,
-    70: 0.0099,
-    75: 0.0104
+  'MUFB': {
+    60: { rate: 0.55, arrangementFee: 2.0, minLoan: 100000, maxLoan: 5000000 },
+    70: { rate: 0.65, arrangementFee: 2.0, minLoan: 100000, maxLoan: 5000000 },
+    75: { rate: 0.75, arrangementFee: 2.0, minLoan: 100000, maxLoan: 5000000 }
   },
-  'Semi & Full Commercial': {
-    60: 0.0089,
-    70: 0.0099,
-    75: 0.0104
+  'Semi-Commercial': {
+    60: { rate: 0.55, arrangementFee: 2.0, minLoan: 100000, maxLoan: 10000000 },
+    70: { rate: 0.65, arrangementFee: 2.0, minLoan: 100000, maxLoan: 10000000 },
+    75: { rate: 0.75, arrangementFee: 2.0, minLoan: 100000, maxLoan: 10000000 }
   },
-  'Semi & Full Commercial Large Loan': {
-    60: 0.0084,
-    70: 0.0094,
-    75: 0.0099
+  'Commercial': {
+    60: { rate: 0.60, arrangementFee: 2.0, minLoan: 100000, maxLoan: 20000000 },
+    70: { rate: 0.70, arrangementFee: 2.0, minLoan: 100000, maxLoan: 20000000 },
+    75: { rate: 0.80, arrangementFee: 2.0, minLoan: 100000, maxLoan: 20000000 }
   },
-  '2nd charge': {
-    60: 0.0125,
-    70: 0.0135,
-    75: 0.0140
+  'Land': {
+    60: { rate: 0.70, arrangementFee: 2.0, minLoan: 100000, maxLoan: 10000000 },
+    70: { rate: 0.80, arrangementFee: 2.0, minLoan: 100000, maxLoan: 10000000 },
+    75: { rate: 0.90, arrangementFee: 2.0, minLoan: 100000, maxLoan: 10000000 }
   }
 };
 
-// FIXED BRIDGE RATES (Annual Rates)
+// Fixed Bridge Rates (Annual fixed rates)
 export const FIXED_BRIDGE_RATES = {
   'Resi BTL single unit': {
-    60: 0.0889,
-    70: 0.1008,
-    75: 0.1068
+    60: { rate: 7.99, arrangementFee: 2.0, minLoan: 100000, maxLoan: 4000000 },
+    70: { rate: 8.49, arrangementFee: 2.0, minLoan: 100000, maxLoan: 4000000 },
+    75: { rate: 8.99, arrangementFee: 2.0, minLoan: 100000, maxLoan: 4000000 }
   },
   'Resi Large Loan': {
-    60: 0.0828,
-    70: 0.0948,
-    75: 0.1008
+    60: { rate: 8.49, arrangementFee: 2.0, minLoan: 4000001, maxLoan: 20000000 },
+    70: { rate: 8.99, arrangementFee: 2.0, minLoan: 4000001, maxLoan: 20000000 },
+    75: { rate: 9.49, arrangementFee: 2.0, minLoan: 4000001, maxLoan: 20000000 }
   },
   'Resi Portfolio': {
-    60: 0.0828,
-    70: 0.0948,
-    75: 0.1008
+    60: { rate: 8.29, arrangementFee: 2.0, minLoan: 100000, maxLoan: 50000000 },
+    70: { rate: 8.79, arrangementFee: 2.0, minLoan: 100000, maxLoan: 50000000 },
+    75: { rate: 9.29, arrangementFee: 2.0, minLoan: 100000, maxLoan: 50000000 }
   },
-  'Dev Exit': {
-    60: 0.0889,
-    70: 0.1008,
-    75: 0.1068
+  'HMO': {
+    60: { rate: 8.49, arrangementFee: 2.0, minLoan: 100000, maxLoan: 5000000 },
+    70: { rate: 8.99, arrangementFee: 2.0, minLoan: 100000, maxLoan: 5000000 },
+    75: { rate: 9.49, arrangementFee: 2.0, minLoan: 100000, maxLoan: 5000000 }
   },
-  'Permitted/Light Dev': {
-    60: 0.1068,
-    70: 0.1188,
-    75: 0.1248
+  'MUFB': {
+    60: { rate: 8.99, arrangementFee: 2.0, minLoan: 100000, maxLoan: 5000000 },
+    70: { rate: 9.49, arrangementFee: 2.0, minLoan: 100000, maxLoan: 5000000 },
+    75: { rate: 9.99, arrangementFee: 2.0, minLoan: 100000, maxLoan: 5000000 }
   },
-  'Semi & Full Commercial': {
-    60: 0.1068,
-    70: 0.1188,
-    75: 0.1248
+  'Semi-Commercial': {
+    60: { rate: 8.99, arrangementFee: 2.0, minLoan: 100000, maxLoan: 10000000 },
+    70: { rate: 9.49, arrangementFee: 2.0, minLoan: 100000, maxLoan: 10000000 },
+    75: { rate: 9.99, arrangementFee: 2.0, minLoan: 100000, maxLoan: 10000000 }
   },
-  'Semi & Full Commercial Large Loan': {
-    60: 0.1008,
-    70: 0.1128,
-    75: 0.1188
+  'Commercial': {
+    60: { rate: 9.49, arrangementFee: 2.0, minLoan: 100000, maxLoan: 20000000 },
+    70: { rate: 9.99, arrangementFee: 2.0, minLoan: 100000, maxLoan: 20000000 },
+    75: { rate: 10.49, arrangementFee: 2.0, minLoan: 100000, maxLoan: 20000000 }
   },
-  '2nd charge': {
-    60: 0.1500,
-    70: 0.1620,
-    75: 0.1680
+  'Land': {
+    60: { rate: 9.99, arrangementFee: 2.0, minLoan: 100000, maxLoan: 10000000 },
+    70: { rate: 10.49, arrangementFee: 2.0, minLoan: 100000, maxLoan: 10000000 },
+    75: { rate: 10.99, arrangementFee: 2.0, minLoan: 100000, maxLoan: 10000000 }
   }
 };
 
-/**
- * Get Fusion rate based on tier, property type, and LTV
- */
-export const getFusionRate = (tier, propertyType, ltv) => {
-  const propertyRates = FUSION_RATES[propertyType];
-  if (!propertyRates) return null;
-  
-  const tierRates = propertyRates[tier];
-  if (!tierRates) return null;
-  
-  return tierRates[ltv] || null;
+// Property type options for each product
+export const PROPERTY_TYPES = {
+  FUSION: ['Residential', 'Commercial'],
+  BRIDGE: [
+    'Resi BTL single unit',
+    'Resi Large Loan',
+    'Resi Portfolio',
+    'HMO',
+    'MUFB',
+    'Semi-Commercial',
+    'Commercial',
+    'Land'
+  ]
 };
 
-/**
- * Get Variable Bridge rate
- */
-export const getVariableBridgeRate = (propertyType, ltv) => {
-  const rates = VARIABLE_BRIDGE_RATES[propertyType];
-  return rates ? rates[ltv] || null : null;
-};
+// LTV options
+export const LTV_OPTIONS = [60, 70, 75];
 
-/**
- * Get Fixed Bridge rate
- */
-export const getFixedBridgeRate = (propertyType, ltv) => {
-  const rates = FIXED_BRIDGE_RATES[propertyType];
-  return rates ? rates[ltv] || null : null;
-};
+// BBR (Bank Base Rate) - This should be updated regularly
+export const BBR = 4.00; // Current BBR %

@@ -1,5 +1,5 @@
 /**
- * Main application component with dynamic criteria and save/load functionality
+ * Main application component with BTL and Bridge & Fusion calculators
  */
 import React, { useState, useMemo, useEffect } from 'react';
 import { useProductSelection } from './hooks/useProductSelection';
@@ -18,6 +18,7 @@ import { ProductGroupToggle } from './components/ProductGroupToggle';
 import { EmailResultsModal } from './components/EmailResultsModal';
 import { SaveCalculationButton } from './components/SaveCalculationButton';
 import { CaseLookup } from './components/CaseLookup';
+import BridgeFusionCalculator from './components/BridgeFusionCalculator';
 import { parseNumber, formatCurrency } from './utils/formatters';
 import { selectRateSource, getFeeColumns, getMaxLTV } from './utils/rateSelectors';
 import { computeColumnData } from './utils/calculationEngine';
@@ -26,6 +27,11 @@ import { PRODUCT_TYPES_LIST, PRODUCT_GROUPS, LOAN_TYPES, PROPERTY_TYPES } from '
 import './styles/styles.css';
 
 function App() {
+  // ============================================
+  // CALCULATOR NAVIGATION STATE
+  // ============================================
+  const [activeCalculator, setActiveCalculator] = useState('btl'); // 'btl' or 'bridge-fusion'
+
   // ============================================
   // 1. ALL HOOKS MUST BE CALLED FIRST (before any conditional returns)
   // ============================================
@@ -571,214 +577,316 @@ function App() {
   // ============================================
 
   return (
-    <div className="app-container">
-      {/* Case Lookup Section */}
-      <CaseLookup onCaseLoaded={handleCaseLoaded} />
-
-      {/* New Calculation Button */}
-      {loadedCaseReference && (
+    <div style={{ minHeight: '100vh', background: '#f1f5f9' }}>
+      {/* Navigation Header */}
+      <header style={{
+        background: '#fff',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        borderBottom: '1px solid #e2e8f0',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+      }}>
         <div style={{
-          gridColumn: "1 / -1",
-          padding: "12px",
-          background: "#fff7ed",
-          border: "1px solid #fed7aa",
-          borderRadius: "8px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "12px",
+          maxWidth: '1400px',
+          margin: '0 auto',
+          padding: '0 24px',
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "18px" }}>📝</span>
-            <span style={{ fontSize: "14px", color: "#7c2d12", fontWeight: 600 }}>
-              Editing: <strong>{loadedCaseReference}</strong>
-            </span>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            height: '64px',
+          }}>
+            {/* Logo/Title */}
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <h1 style={{
+                fontSize: '24px',
+                fontWeight: 700,
+                color: '#0f172a',
+                margin: 0,
+              }}>
+                Loan Calculator Suite
+              </h1>
+            </div>
+
+            {/* Calculator Navigation */}
+            <nav style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={() => setActiveCalculator('btl')}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: 'none',
+                  transition: 'all 0.2s ease',
+                  background: activeCalculator === 'btl' ? '#008891' : '#f1f5f9',
+                  color: activeCalculator === 'btl' ? '#fff' : '#475569',
+                }}
+                onMouseOver={(e) => {
+                  if (activeCalculator !== 'btl') {
+                    e.target.style.background = '#e2e8f0';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (activeCalculator !== 'btl') {
+                    e.target.style.background = '#f1f5f9';
+                  }
+                }}
+              >
+                🏠 BTL Calculator
+              </button>
+              <button
+                onClick={() => setActiveCalculator('bridge-fusion')}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: 'none',
+                  transition: 'all 0.2s ease',
+                  background: activeCalculator === 'bridge-fusion' ? '#008891' : '#f1f5f9',
+                  color: activeCalculator === 'bridge-fusion' ? '#fff' : '#475569',
+                }}
+                onMouseOver={(e) => {
+                  if (activeCalculator !== 'bridge-fusion') {
+                    e.target.style.background = '#e2e8f0';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (activeCalculator !== 'bridge-fusion') {
+                    e.target.style.background = '#f1f5f9';
+                  }
+                }}
+              >
+                🌉 Bridge & Fusion
+              </button>
+            </nav>
           </div>
-          <button
-            onClick={handleNewCalculation}
-            style={{
-              padding: "8px 16px",
-              background: "#f1f5f9",
-              color: "#0f172a",
-              border: "1px solid #cbd5e1",
-              borderRadius: "6px",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-            }}
-            onMouseOver={(e) => e.target.style.background = "#e2e8f0"}
-            onMouseOut={(e) => e.target.style.background = "#f1f5f9"}
-          >
-            ➕ New Calculation
-          </button>
         </div>
-      )}
+      </header>
 
-      <ProductSetup
-        mainProductType={mainProductType}
-        setMainProductType={setMainProductType}
-        propertyType={propertyType}
-        setPropertyType={setPropertyType}
-        isRetention={isRetention}
-        setIsRetention={setIsRetention}
-        retentionLtv={retentionLtv}
-        setRetentionLtv={setRetentionLtv}
-        tier={tier}
-      />
+      {/* Calculator Content */}
+      <main>
+        {activeCalculator === 'btl' && (
+          <div className="app-container">
+            {/* Case Lookup Section */}
+            <CaseLookup onCaseLoaded={handleCaseLoaded} />
 
-      <CriteriaSection
-        isOpen={openSections.criteria}
-        onToggle={() => setOpenSections((s) => ({ ...s, criteria: !s.criteria }))}
-        currentCriteria={getCurrentCriteria()}
-        criteria={criteria}
-        setCriteria={setCriteria}
-      />
+            {/* New Calculation Button */}
+            {loadedCaseReference && (
+              <div style={{
+                gridColumn: "1 / -1",
+                padding: "12px",
+                background: "#fff7ed",
+                border: "1px solid #fed7aa",
+                borderRadius: "8px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "18px" }}>📝</span>
+                  <span style={{ fontSize: "14px", color: "#7c2d12", fontWeight: 600 }}>
+                    Editing: <strong>{loadedCaseReference}</strong>
+                  </span>
+                </div>
+                <button
+                  onClick={handleNewCalculation}
+                  style={{
+                    padding: "8px 16px",
+                    background: "#f1f5f9",
+                    color: "#0f172a",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseOver={(e) => e.target.style.background = "#e2e8f0"}
+                  onMouseOut={(e) => e.target.style.background = "#f1f5f9"}
+                >
+                  ➕ New Calculation
+                </button>
+              </div>
+            )}
 
-      <PropertyProductSection
-        isOpen={openSections.property}
-        onToggle={() => setOpenSections((s) => ({ ...s, property: !s.property }))}
-        propertyValue={propertyValue}
-        setPropertyValue={setPropertyValue}
-        monthlyRent={monthlyRent}
-        setMonthlyRent={setMonthlyRent}
-        loanTypeRequired={loanTypeRequired}
-        setLoanTypeRequired={setLoanTypeRequired}
-        specificGrossLoan={specificGrossLoan}
-        setSpecificGrossLoan={setSpecificGrossLoan}
-        specificNetLoan={specificNetLoan}
-        setSpecificNetLoan={setSpecificNetLoan}
-        specificLTV={specificLTV}
-        setSpecificLTV={setSpecificLTV}
-        maxLTV={maxLTV}
-        tier={tier}
-        productType={productType}
-        setProductType={setProductType}
-        productTypesList={productTypesList}
-      />
+            <ProductSetup
+              mainProductType={mainProductType}
+              setMainProductType={setMainProductType}
+              propertyType={propertyType}
+              setPropertyType={setPropertyType}
+              isRetention={isRetention}
+              setIsRetention={setIsRetention}
+              retentionLtv={retentionLtv}
+              setRetentionLtv={setRetentionLtv}
+              tier={tier}
+            />
 
-      <FeesSection
-        isOpen={openSections.fees}
-        onToggle={() => setOpenSections((s) => ({ ...s, fees: !s.fees }))}
-        procFeePctInput={procFeePctInput}
-        setProcFeePctInput={setProcFeePctInput}
-        effectiveProcFeePct={effectiveProcFeePct}
-        brokerFeePct={brokerFeePct}
-        setBrokerFeePct={setBrokerFeePct}
-        brokerFeeFlat={brokerFeeFlat}
-        setBrokerFeeFlat={setBrokerFeeFlat}
-        isRetention={isRetention}
-      />
+            <CriteriaSection
+              isOpen={openSections.criteria}
+              onToggle={() => setOpenSections((s) => ({ ...s, criteria: !s.criteria }))}
+              currentCriteria={getCurrentCriteria()}
+              criteria={criteria}
+              setCriteria={setCriteria}
+            />
 
-      <SummarySection
-        bestSummary={bestSummary}
-        loanTypeRequired={loanTypeRequired}
-        productType={productType}
-        tier={tier}
-      />
+            <PropertyProductSection
+              isOpen={openSections.property}
+              onToggle={() => setOpenSections((s) => ({ ...s, property: !s.property }))}
+              propertyValue={propertyValue}
+              setPropertyValue={setPropertyValue}
+              monthlyRent={monthlyRent}
+              setMonthlyRent={setMonthlyRent}
+              loanTypeRequired={loanTypeRequired}
+              setLoanTypeRequired={setLoanTypeRequired}
+              specificGrossLoan={specificGrossLoan}
+              setSpecificGrossLoan={setSpecificGrossLoan}
+              specificNetLoan={specificNetLoan}
+              setSpecificNetLoan={setSpecificNetLoan}
+              specificLTV={specificLTV}
+              setSpecificLTV={setSpecificLTV}
+              maxLTV={maxLTV}
+              tier={tier}
+              productType={productType}
+              setProductType={setProductType}
+              productTypesList={productTypesList}
+            />
 
-      {canShowMatrix && propertyType === PROPERTY_TYPES.RESIDENTIAL && (
-        <ProductGroupToggle
-          productGroup={productGroup}
-          setProductGroup={setProductGroup}
-          isWithinCoreCriteria={isWithinCoreCriteria}
-          tier={tier}
-        />
-      )}
+            <FeesSection
+              isOpen={openSections.fees}
+              onToggle={() => setOpenSections((s) => ({ ...s, fees: !s.fees }))}
+              procFeePctInput={procFeePctInput}
+              setProcFeePctInput={setProcFeePctInput}
+              effectiveProcFeePct={effectiveProcFeePct}
+              brokerFeePct={brokerFeePct}
+              setBrokerFeePct={setBrokerFeePct}
+              brokerFeeFlat={brokerFeeFlat}
+              setBrokerFeeFlat={setBrokerFeeFlat}
+              isRetention={isRetention}
+            />
 
-      {canShowMatrix && (
-        <>
-          <MatrixSection
-            allColumnData={allColumnData}
-            productGroup={productGroup}
-            propertyType={propertyType}
-            isRetention={isRetention}
-            limits={limits}
-            deferredCap={deferredCap}
-            manualSettings={manualSettings}
-            feeOverrides={feeOverrides}
-            tempRateInput={tempRateInput}
-            tempFeeInput={tempFeeInput}
-            handleRateInputChange={handleRateInputChange}
-            handleRateInputBlur={handleRateInputBlur}
-            handleFeeInputChange={handleFeeInputChange}
-            handleFeeInputBlur={handleFeeInputBlur}
-            handleResetFeeOverride={handleResetFeeOverride}
-            handleRolledChange={handleRolledChange}
-            handleDeferredChange={handleDeferredChange}
-            handleResetManual={handleResetManual}
-            handleResetRateOverride={handleResetRateOverride}
-          />
+            <SummarySection
+              bestSummary={bestSummary}
+              loanTypeRequired={loanTypeRequired}
+              productType={productType}
+              tier={tier}
+            />
 
-          <BasicGrossSection
-            feeColumns={feeColumns}
-            selected={selected}
-            propertyValue={propertyValue}
-            monthlyRent={monthlyRent}
-            specificNetLoan={specificNetLoan}
-            specificGrossLoan={specificGrossLoan}
-            loanTypeRequired={loanTypeRequired}
-            specificLTV={specificLTV}
-            productType={productType}
-            tier={tier}
-            criteria={criteria}
-            propertyType={propertyType}
-            productGroup={productGroup}
-            isRetention={isRetention}
-            retentionLtv={retentionLtv}
-            feeOverrides={feeOverrides}
-            limits={limits}
-          />
-        </>
-      )}
+            {canShowMatrix && propertyType === PROPERTY_TYPES.RESIDENTIAL && (
+              <ProductGroupToggle
+                productGroup={productGroup}
+                setProductGroup={setProductGroup}
+                isWithinCoreCriteria={isWithinCoreCriteria}
+                tier={tier}
+              />
+            )}
 
-      {/* Action Buttons */}
-      {canShowMatrix && bestSummary && (
-        <>
-          <SaveCalculationButton
-            calculationData={calculationData}
-            allColumnData={allColumnData}
-            bestSummary={bestSummary}
-            userAccessLevel={userAccessLevel}
-            criteria={criteria}
-            existingCaseReference={loadedCaseReference}
-            onSaved={(savedReference) => {
-              setLoadedCaseReference(savedReference);
-            }}
-          />
+            {canShowMatrix && (
+              <>
+                <MatrixSection
+                  allColumnData={allColumnData}
+                  productGroup={productGroup}
+                  propertyType={propertyType}
+                  isRetention={isRetention}
+                  limits={limits}
+                  deferredCap={deferredCap}
+                  manualSettings={manualSettings}
+                  feeOverrides={feeOverrides}
+                  tempRateInput={tempRateInput}
+                  tempFeeInput={tempFeeInput}
+                  handleRateInputChange={handleRateInputChange}
+                  handleRateInputBlur={handleRateInputBlur}
+                  handleFeeInputChange={handleFeeInputChange}
+                  handleFeeInputBlur={handleFeeInputBlur}
+                  handleResetFeeOverride={handleResetFeeOverride}
+                  handleRolledChange={handleRolledChange}
+                  handleDeferredChange={handleDeferredChange}
+                  handleResetManual={handleResetManual}
+                  handleResetRateOverride={handleResetRateOverride}
+                />
 
-          <button
-            onClick={() => setShowEmailModal(true)}
-            style={{
-              gridColumn: "1 / -1",
-              padding: "16px 32px",
-              background: "#008891",
-              color: "#fff",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "16px",
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-              transition: "all 0.2s ease",
-            }}
-            onMouseOver={(e) => e.target.style.background = "#006b73"}
-            onMouseOut={(e) => e.target.style.background = "#008891"}
-          >
-            📧 Email Results
-          </button>
-        </>
-      )}
+                <BasicGrossSection
+                  feeColumns={feeColumns}
+                  selected={selected}
+                  propertyValue={propertyValue}
+                  monthlyRent={monthlyRent}
+                  specificNetLoan={specificNetLoan}
+                  specificGrossLoan={specificGrossLoan}
+                  loanTypeRequired={loanTypeRequired}
+                  specificLTV={specificLTV}
+                  productType={productType}
+                  tier={tier}
+                  criteria={criteria}
+                  propertyType={propertyType}
+                  productGroup={productGroup}
+                  isRetention={isRetention}
+                  retentionLtv={retentionLtv}
+                  feeOverrides={feeOverrides}
+                  limits={limits}
+                />
+              </>
+            )}
 
-      <EmailResultsModal
-        isOpen={showEmailModal}
-        onClose={() => setShowEmailModal(false)}
-        calculationData={calculationData}
-        allColumnData={allColumnData}
-      />
+            {/* Action Buttons */}
+            {canShowMatrix && bestSummary && (
+              <>
+                <SaveCalculationButton
+                  calculationData={calculationData}
+                  allColumnData={allColumnData}
+                  bestSummary={bestSummary}
+                  userAccessLevel={userAccessLevel}
+                  criteria={criteria}
+                  existingCaseReference={loadedCaseReference}
+                  onSaved={(savedReference) => {
+                    setLoadedCaseReference(savedReference);
+                  }}
+                />
+
+                <button
+                  onClick={() => setShowEmailModal(true)}
+                  style={{
+                    gridColumn: "1 / -1",
+                    padding: "16px 32px",
+                    background: "#008891",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseOver={(e) => e.target.style.background = "#006b73"}
+                  onMouseOut={(e) => e.target.style.background = "#008891"}
+                >
+                  📧 Email Results
+                </button>
+              </>
+            )}
+
+            <EmailResultsModal
+              isOpen={showEmailModal}
+              onClose={() => setShowEmailModal(false)}
+              calculationData={calculationData}
+              allColumnData={allColumnData}
+            />
+          </div>
+        )}
+
+        {activeCalculator === 'bridge-fusion' && (
+          <BridgeFusionCalculator />
+        )}
+      </main>
     </div>
   );
 }
