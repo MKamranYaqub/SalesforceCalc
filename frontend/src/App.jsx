@@ -22,7 +22,7 @@ import { CaseLookup } from './components/CaseLookup';
 import { useBridgeFusionCalculator } from './hooks/useBridgeFusionCalculator';
 import { BridgeFusionPropertyProductSection } from './components/BridgeFusionPropertyProductSection';
 import { BridgeFusionFeesSection } from './components/BridgeFusionFeesSection';
-import { BridgeFusionOutputSection } from './components/BridgeFusionOutputSection';
+import { BridgeFusionMatrixSection } from './components/BridgeFusionMatrixSection';
 import { parseNumber, formatCurrency } from './utils/formatters';
 import { selectRateSource, getFeeColumns, getMaxLTV } from './utils/rateSelectors';
 import { computeColumnData } from './utils/calculationEngine';
@@ -822,11 +822,13 @@ function App() {
                 setDeferredPct={bridgeFusion.setDeferredPct}
                 rolledMonths={bridgeFusion.rolledMonths}
                 setRolledMonths={bridgeFusion.setRolledMonths}
+                procFeePct={bridgeFusion.procFeePct}
+                setProcFeePct={bridgeFusion.setProcFeePct}
+                brokerFeeFlat={bridgeFusion.brokerFeeFlat}
+                setBrokerFeeFlat={bridgeFusion.setBrokerFeeFlat}
               />
-              <BridgeFusionOutputSection
-                results={bridgeFusion.results}
-                bestResults={bridgeFusion.bestResults}
-              />
+
+              <BridgeFusionMatrixSection results={bridgeFusion.bestResults} />
 
               {/* Action Buttons for Bridge & Fusion */}
               {bridgeFusion.results &&
