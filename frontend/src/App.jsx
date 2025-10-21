@@ -788,11 +788,12 @@ function App() {
 
           {/* Conditionally render property/product, fees and outputs based on product type */}
           {isBridgeFusion ? (
-            // Wrap Bridge & Fusion sections in a flex column so they stack vertically
-            <div
-              style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
-            >
+            <>
               <BridgeFusionPropertyProductSection
+                isOpen={openSections.property}
+                onToggle={() =>
+                  setOpenSections((s) => ({ ...s, property: !s.property }))
+                }
                 propertyValue={bridgeFusion.propertyValue}
                 setPropertyValue={bridgeFusion.setPropertyValue}
                 grossLoan={bridgeFusion.grossLoan}
@@ -811,7 +812,10 @@ function App() {
                 overrideRate={bridgeFusion.overrideRate}
                 setOverrideRate={bridgeFusion.setOverrideRate}
               />
+
               <BridgeFusionFeesSection
+                isOpen={openSections.fees}
+                onToggle={() => setOpenSections((s) => ({ ...s, fees: !s.fees }))}
                 arrangementPct={bridgeFusion.arrangementPct}
                 setArrangementPct={bridgeFusion.setArrangementPct}
                 deferredPct={bridgeFusion.deferredPct}

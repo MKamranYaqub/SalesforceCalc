@@ -1,12 +1,18 @@
-import React from 'react';
-
 /**
  * Fees section for Bridge & Fusion products.  Allows the user to
  * specify arrangement fee %, deferred interest % (Fusion only) and
  * rolled months (for rolled interest).  Additional broker or proc
  * fees could be added here if required.
  */
+import React from 'react';
+import PropTypes from 'prop-types';
+import { Collapsible } from './UI/Collapsible';
+import { ErrorMessage } from './UI/ErrorMessage';
+import { useValidation } from '../hooks/useValidation';
+
 export function BridgeFusionFeesSection({
+  isOpen = false,
+  onToggle = () => {},
   arrangementPct,
   setArrangementPct,
   deferredPct,
@@ -14,99 +20,136 @@ export function BridgeFusionFeesSection({
   rolledMonths,
   setRolledMonths,
 }) {
+  const { errors, validateField } = useValidation();
+
+  const handleArrangementPctChange = (value) => {
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue)) {
+      setArrangementPct(numValue / 100);
+      validateField('arrangementPct', value);
+    } else {
+      setArrangementPct(0);
+    }
+  };
+
+  const handleDeferredPctChange = (value) => {
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue)) {
+      setDeferredPct(numValue / 100);
+      validateField('deferredPct', value);
+    } else {
+      setDeferredPct(0);
+    }
+  };
+
+  const handleRolledMonthsChange = (value) => {
+    const numValue = parseInt(value, 10);
+    setRolledMonths(!isNaN(numValue) ? numValue : 0);
+    if (value) validateField('rolledMonths', value);
+  };
+
   return (
-    <div
-      style={{
-        background: '#fff',
-        padding: '24px',
-        border: '1px solid #e2e8f0',
-        borderRadius: '8px',
-        marginTop: '16px',
-      }}
+    <Collapsible
+      title="💰 Fees (Bridge & Fusion)"
+      isOpen={isOpen}
+      onToggle={onToggle}
     >
-      <h4 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>
-        Fees (Bridge & Fusion)
-      </h4>
       <div
         style={{
-          display: 'grid',
-          gap: '16px',
-          gridTemplateColumns: 'repeat(3, minmax(180px, 1fr))',
+          display: "grid",
+          gap: "16px",
+          gridTemplateColumns: "repeat(4, minmax(220px, 1fr))",
         }}
       >
-        {/* Arrangement fee */}
-        <div>
-          <label
-            style={{ fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}
-          >
+        {/* Arrangement Fee */}
+        <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 6 }}>
             Arrangement Fee (%)
           </label>
           <input
             type="number"
+            step="0.01"
             value={(arrangementPct * 100).toFixed(2)}
-            onChange={(e) => setArrangementPct(parseFloat(e.target.value) / 100)}
-            placeholder="e.g. 2"
+            onChange={(e) => handleArrangementPctChange(e.target.value)}
+            onBlur={(e) => validateField('arrangementPct', e.target.value)}
+            placeholder="e.g. 2.00"
             style={{
-              width: '100%',
+              width: "100%",
               height: 36,
-              padding: '6px 10px',
-              border: '1px solid #cbd5e1',
+              padding: "6px 10px",
+              border: errors.arrangementPct ? "1px solid #ef4444" : "1px solid #cbd5e1",
               borderRadius: 6,
-              background: '#fff',
+              background: "#fff",
               fontSize: 14,
             }}
           />
+          <ErrorMessage error={errors.arrangementPct} />
         </div>
-        {/* Deferred interest */}
-        <div>
-          <label
-            style={{ fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}
-          >
+
+        {/* Deferred Interest */}
+        <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 6 }}>
             Deferred Interest (%)
-            <span style={{ display: 'block', fontSize: '10px', color: '#6b7280' }}>
-              (Only applies to Fusion)
-            </span>
           </label>
           <input
             type="number"
+            step="0.01"
             value={(deferredPct * 100).toFixed(2)}
-            onChange={(e) => setDeferredPct(parseFloat(e.target.value) / 100)}
-            placeholder="e.g. 1"
+            onChange={(e) => handleDeferredPctChange(e.target.value)}
+            onBlur={(e) => validateField('deferredPct', e.target.value)}
+            placeholder="e.g. 1.00"
             style={{
-              width: '100%',
+              width: "100%",
               height: 36,
-              padding: '6px 10px',
-              border: '1px solid #cbd5e1',
+              padding: "6px 10px",
+              border: errors.deferredPct ? "1px solid #ef4444" : "1px solid #cbd5e1",
               borderRadius: 6,
-              background: '#fff',
+              background: "#fff",
               fontSize: 14,
             }}
           />
+          <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4 }}>
+            (Only applies to Fusion)
+          </div>
+          <ErrorMessage error={errors.deferredPct} />
         </div>
-        {/* Rolled months */}
-        <div>
-          <label
-            style={{ fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}
-          >
+
+        {/* Rolled Months */}
+        <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 6 }}>
             Rolled Months
           </label>
           <input
             type="number"
+            step="1"
             value={rolledMonths}
-            onChange={(e) => setRolledMonths(parseInt(e.target.value, 10) || 0)}
+            onChange={(e) => handleRolledMonthsChange(e.target.value)}
+            onBlur={(e) => validateField('rolledMonths', e.target.value)}
             placeholder="e.g. 0"
             style={{
-              width: '100%',
+              width: "100%",
               height: 36,
-              padding: '6px 10px',
-              border: '1px solid #cbd5e1',
+              padding: "6px 10px",
+              border: errors.rolledMonths ? "1px solid #ef4444" : "1px solid #cbd5e1",
               borderRadius: 6,
-              background: '#fff',
+              background: "#fff",
               fontSize: 14,
             }}
           />
+          <ErrorMessage error={errors.rolledMonths} />
         </div>
       </div>
-    </div>
+    </Collapsible>
   );
 }
+
+BridgeFusionFeesSection.propTypes = {
+  isOpen: PropTypes.bool,
+  onToggle: PropTypes.func,
+  arrangementPct: PropTypes.number.isRequired,
+  setArrangementPct: PropTypes.func.isRequired,
+  deferredPct: PropTypes.number.isRequired,
+  setDeferredPct: PropTypes.func.isRequired,
+  rolledMonths: PropTypes.number.isRequired,
+  setRolledMonths: PropTypes.func.isRequired,
+};

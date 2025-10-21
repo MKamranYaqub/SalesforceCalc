@@ -1,5 +1,3 @@
-import React from 'react';
-
 /**
  * Property & Product section for Bridge & Fusion products.  Displays
  * input fields for property value, gross loan, property type and
@@ -7,7 +5,16 @@ import React from 'react';
  * The component accepts all relevant state and setter functions as
  * props (usually provided by useBridgeFusionCalculator).
  */
+import React, { useState } from 'react';
+import PropTypes from 'prop-types';
+import { Collapsible } from './UI/Collapsible';
+import { CurrencyInput } from './UI/CurrencyInput';
+import { ErrorMessage } from './UI/ErrorMessage';
+import { useValidation } from '../hooks/useValidation';
+
 export function BridgeFusionPropertyProductSection({
+  isOpen = true,
+  onToggle = () => {},
   propertyValue,
   setPropertyValue,
   grossLoan,
@@ -26,89 +33,82 @@ export function BridgeFusionPropertyProductSection({
   overrideRate,
   setOverrideRate,
 }) {
+  const { errors, validateField } = useValidation();
+
+  const handlePropertyValueChange = (value) => {
+    setPropertyValue(value);
+    if (value) validateField('propertyValue', value);
+  };
+
+  const handleGrossLoanChange = (value) => {
+    setGrossLoan(value);
+    if (value) validateField('grossLoan', value);
+  };
+
+  const handleRentChange = (value) => {
+    setRent(value);
+    if (value) validateField('monthlyRent', value);
+  };
+
   return (
-    <div
-      style={{
-        background: '#fff',
-        padding: '24px',
-        border: '1px solid #e2e8f0',
-        borderRadius: '8px',
-        marginBottom: '16px',
-      }}
+    <Collapsible
+      title="🏦 Property & Product (Bridge & Fusion)"
+      isOpen={isOpen}
+      onToggle={onToggle}
     >
-      <h4 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>
-        Property & Product (Bridge & Fusion)
-      </h4>
       <div
         style={{
           display: 'grid',
           gap: '16px',
-          gridTemplateColumns: 'repeat(2, minmax(220px, 1fr))',
+          gridTemplateColumns: 'repeat(4, minmax(220px, 1fr))',
         }}
       >
-        {/* Property Value */}
+        {/* Property Value with Currency Formatting */}
         <div>
-          <label
-            style={{ fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}
-          >
-            Property Value (£)
-          </label>
-          <input
-            type="number"
+          <CurrencyInput
+            label="Property Value"
             value={propertyValue}
-            onChange={(e) => setPropertyValue(e.target.value)}
-            placeholder="e.g. 500000"
-            style={{
-              width: '100%',
-              height: 36,
-              padding: '6px 10px',
-              border: '1px solid #cbd5e1',
-              borderRadius: 6,
-              background: '#fff',
-              fontSize: 14,
-            }}
+            onChange={handlePropertyValueChange}
+            onBlur={(value) => validateField('propertyValue', value)}
+            placeholder="e.g. 500,000"
+            error={!!errors.propertyValue}
+            required
+            min={50000}
+            max={10000000}
           />
+          <ErrorMessage error={errors.propertyValue} />
         </div>
-        {/* Gross Loan */}
+
+        {/* Gross Loan with Currency Formatting */}
         <div>
-          <label
-            style={{ fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}
-          >
-            Gross Loan (£)
-          </label>
-          <input
-            type="number"
+          <CurrencyInput
+            label="Gross Loan"
             value={grossLoan}
-            onChange={(e) => setGrossLoan(e.target.value)}
-            placeholder="e.g. 300000"
-            style={{
-              width: '100%',
-              height: 36,
-              padding: '6px 10px',
-              border: '1px solid #cbd5e1',
-              borderRadius: 6,
-              background: '#fff',
-              fontSize: 14,
-            }}
+            onChange={handleGrossLoanChange}
+            onBlur={(value) => validateField('grossLoan', value)}
+            placeholder="e.g. 300,000"
+            error={!!errors.grossLoan}
+            required
+            min={50000}
+            max={10000000}
           />
+          <ErrorMessage error={errors.grossLoan} />
         </div>
         {/* Property Type */}
-        <div>
-          <label
-            style={{ fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}
-          >
+        <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 6 }}>
             Property Type
           </label>
           <select
             value={propertyType}
             onChange={(e) => setPropertyType(e.target.value)}
             style={{
-              width: '100%',
+              width: "100%",
               height: 36,
-              padding: '6px 10px',
-              border: '1px solid #cbd5e1',
+              padding: "6px 10px",
+              border: "1px solid #cbd5e1",
               borderRadius: 6,
-              background: '#fff',
+              background: "#fff",
               fontSize: 14,
             }}
           >
@@ -117,23 +117,22 @@ export function BridgeFusionPropertyProductSection({
             <option>Full Commercial</option>
           </select>
         </div>
+
         {/* Sub-Product */}
-        <div>
-          <label
-            style={{ fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}
-          >
+        <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 6 }}>
             Sub‑Product
           </label>
           <select
             value={subProduct}
             onChange={(e) => setSubProduct(e.target.value)}
             style={{
-              width: '100%',
+              width: "100%",
               height: 36,
-              padding: '6px 10px',
-              border: '1px solid #cbd5e1',
+              padding: "6px 10px",
+              border: "1px solid #cbd5e1",
               borderRadius: 6,
-              background: '#fff',
+              background: "#fff",
               fontSize: 14,
             }}
           >
@@ -142,34 +141,26 @@ export function BridgeFusionPropertyProductSection({
             ))}
           </select>
         </div>
-        {/* Monthly Rent */}
+
+        {/* Monthly Rent with Currency Formatting */}
         <div>
-          <label
-            style={{ fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}
-          >
-            Monthly Rent (£)
-            <span style={{ display: 'block', fontSize: '10px', color: '#6b7280' }}>
-              (Only used for Fusion)
-            </span>
-          </label>
-          <input
-            type="number"
+          <CurrencyInput
+            label="Monthly Rent"
             value={rent}
-            onChange={(e) => setRent(e.target.value)}
-            placeholder="e.g. 2000"
-            style={{
-              width: '100%',
-              height: 36,
-              padding: '6px 10px',
-              border: '1px solid #cbd5e1',
-              borderRadius: 6,
-              background: '#fff',
-              fontSize: 14,
-            }}
+            onChange={handleRentChange}
+            onBlur={(value) => validateField('monthlyRent', value)}
+            placeholder="e.g. 2,000"
+            error={!!errors.monthlyRent}
+            min={100}
+            max={50000}
           />
+          <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4 }}>
+            (Only used for Fusion)
+          </div>
+          <ErrorMessage error={errors.monthlyRent} />
         </div>
         {/* Top Slicing */}
-        <div style={{ display: 'flex', alignItems: 'center', marginTop: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", marginTop: 6 }}>
           <input
             type="checkbox"
             id="topSlicing"
@@ -177,60 +168,82 @@ export function BridgeFusionPropertyProductSection({
             onChange={(e) => setTopSlicing(e.target.checked)}
             style={{ marginRight: 6, height: 16, width: 16 }}
           />
-          <label htmlFor="topSlicing" style={{ fontSize: 12 }}>
+          <label htmlFor="topSlicing" style={{ fontSize: 12, color: "#334155" }}>
             Top Slicing?
-            <span style={{ display: 'block', fontSize: '10px', color: '#6b7280' }}>
+            <span style={{ display: "block", fontSize: 10, color: "#6b7280", marginTop: 2 }}>
               (Only used for Fusion)
             </span>
           </label>
         </div>
+
         {/* Base Rate */}
-        <div>
-          <label
-            style={{ fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}
-          >
+        <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 6 }}>
             Base Rate (BBR) %
           </label>
           <input
             type="number"
+            step="0.01"
             value={bbr}
             onChange={(e) => setBbr(e.target.value)}
             placeholder="e.g. 5.25"
             style={{
-              width: '100%',
+              width: "100%",
               height: 36,
-              padding: '6px 10px',
-              border: '1px solid #cbd5e1',
+              padding: "6px 10px",
+              border: "1px solid #cbd5e1",
               borderRadius: 6,
-              background: '#fff',
+              background: "#fff",
               fontSize: 14,
             }}
           />
         </div>
+
         {/* Override Rate */}
-        <div>
-          <label
-            style={{ fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}
-          >
+        <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 6 }}>
             Override Rate (% pm)
           </label>
           <input
             type="number"
+            step="0.01"
             value={overrideRate}
             onChange={(e) => setOverrideRate(e.target.value)}
             placeholder="Leave blank to use table"
             style={{
-              width: '100%',
+              width: "100%",
               height: 36,
-              padding: '6px 10px',
-              border: '1px solid #cbd5e1',
+              padding: "6px 10px",
+              border: "1px solid #cbd5e1",
               borderRadius: 6,
-              background: '#fff',
+              background: "#fff",
               fontSize: 14,
             }}
           />
         </div>
       </div>
-    </div>
+    </Collapsible>
   );
 }
+
+BridgeFusionPropertyProductSection.propTypes = {
+  isOpen: PropTypes.bool,
+  onToggle: PropTypes.func,
+  propertyValue: PropTypes.string.isRequired,
+  setPropertyValue: PropTypes.func.isRequired,
+  grossLoan: PropTypes.string.isRequired,
+  setGrossLoan: PropTypes.func.isRequired,
+  propertyType: PropTypes.string.isRequired,
+  setPropertyType: PropTypes.func.isRequired,
+  subProduct: PropTypes.string.isRequired,
+  setSubProduct: PropTypes.func.isRequired,
+  subProductOptions: PropTypes.arrayOf(PropTypes.string).isRequired,
+  rent: PropTypes.string.isRequired,
+  setRent: PropTypes.func.isRequired,
+  topSlicing: PropTypes.bool.isRequired,
+  setTopSlicing: PropTypes.func.isRequired,
+  bbr: PropTypes.string.isRequired,
+  setBbr: PropTypes.func.isRequired,
+  overrideRate: PropTypes.string.isRequired,
+  setOverrideRate: PropTypes.func.isRequired,
+};
