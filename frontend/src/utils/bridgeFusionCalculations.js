@@ -114,6 +114,8 @@ const resolveFusionRate = (gross, isCommercial, bbrPct, overrideMonthly = 0) => 
  * @param {number} args.rolledMonths Number of months of rolled interest.
  * @param {number} args.arrangementPct Arrangement fee percentage.
  * @param {number} args.deferredPct Deferred interest percentage (Fusion).
+ * @param {number} args.procFeePct Processing fee percentage.
+ * @param {number} args.brokerFeeFlat Broker fee flat amount.
  * @returns {object} Result metrics.
  */
 export function solveBridgeFusion({
@@ -130,38 +132,131 @@ export function solveBridgeFusion({
   rolledMonths = 0,
   arrangementPct = 0.02,
   deferredPct = 0,
+  procFeePct = 0,
+  brokerFeeFlat = 0,
 }) {
   let gross = Number(grossLoanInput);
   const bucket = ltvBucketFromGross(gross, propertyValue);
-  // Determine full annual rate and tier name
-  let fullAnnual, tierName;
+
+  // Determine full annual rate, margin/coupon, and tier name
+  let fullAnnual, marginMonthly, couponMonthly, tierName, bbrMonthly;
+  bbrMonthly = (bbrPct || 0) / 12 / 100; // Convert annual % to monthly decimal
+
   if (kind === 'bridge-var') {
-    fullAnnual = resolveBridgeVarRate(bucket, subProduct, bbrPct, overrideMonthly);
+    marginMonthly = overrideMonthly > 0
+      ? overrideMonthly / 100
+      : VARIABLE_RATES[bucket][subProduct] || 0;
+    fullAnnual = (marginMonthly + (bbrPct || 0) / 12) * 12;
+    couponMonthly = marginMonthly; // For variable, coupon = margin
   } else if (kind === 'bridge-fix') {
-    fullAnnual = resolveBridgeFixRate(bucket, subProduct, overrideMonthly);
+    couponMonthly = overrideMonthly > 0
+      ? overrideMonthly / 100
+      : FIXED_RATES[bucket][subProduct] || 0;
+    fullAnnual = couponMonthly * 12;
+    marginMonthly = couponMonthly; // For fixed, margin = coupon
   } else {
+    // Fusion
     const res = resolveFusionRate(gross, isCommercial, bbrPct, overrideMonthly);
     fullAnnual = res.annualFull;
     tierName = res.tier;
+    marginMonthly = overrideMonthly > 0 ? overrideMonthly / 100 : (res.annualFull - (bbrPct || 0)) / 12;
+    couponMonthly = marginMonthly;
   }
+
+  // Calculate fees
   const arrangementFeeGBP = gross * arrangementPct;
-  const monthlyRate = fullAnnual / 12;
-  const rolledInterestGBP = gross * monthlyRate * rolledMonths;
+  const procFeeGBP = gross * (procFeePct / 100);
+  const brokerFeeGBP = brokerFeeFlat;
+
+  // Calculate interest components
+  const monthlyRatePct = fullAnnual / 12; // as decimal
+  const servicedMonths = termMonths - rolledMonths;
+
+  // Rolled interest breakdown
+  const rolledIntCoupon = gross * couponMonthly * rolledMonths;
+  const rolledIntBBR = kind === 'bridge-var' || kind === 'fusion'
+    ? gross * bbrMonthly * rolledMonths
+    : 0;
+  const rolledInterestGBP = rolledIntCoupon + rolledIntBBR;
+
+  // Deferred interest
   const deferredGBP = kind === 'fusion' ? gross * deferredPct : 0;
-  const netLoanGBP = Math.max(0, gross - arrangementFeeGBP - rolledInterestGBP - deferredGBP);
-  const monthlyPaymentGBP = (gross * fullAnnual) / 12;
-  const ltv = gross / (propertyValue || 1);
+
+  // Serviced interest (total interest over serviced months)
+  const servicedInterestGBP = gross * monthlyRatePct * servicedMonths;
+
+  // Total interest
+  const totalInterest = deferredGBP + rolledInterestGBP + servicedInterestGBP;
+
+  // Monthly payment breakdown
+  const fullIntCoupon = gross * couponMonthly;
+  const fullIntBBR = kind === 'bridge-var' || kind === 'fusion'
+    ? gross * bbrMonthly
+    : 0;
+  const monthlyPaymentGBP = fullIntCoupon + fullIntBBR;
+
+  // Net calculations
+  const netLoanGBP = Math.max(0, gross - arrangementFeeGBP - rolledInterestGBP - deferredGBP - procFeeGBP - brokerFeeGBP);
+
+  // LTV calculations
+  const grossLTV = (gross / (propertyValue || 1)) * 100;
+  const netLTV = (netLoanGBP / (propertyValue || 1)) * 100;
+
+  // APRC calculation (simplified - assumes single payment at end)
+  const totalAmountRepayable = gross + totalInterest;
+  const aprcAnnual = ((totalAmountRepayable / netLoanGBP - 1) / (termMonths / 12)) * 100;
+  const aprcMonthly = aprcAnnual / 12;
+
+  // ICR
   const icr = kind === 'fusion' ? ((rentPm || 0) + (topSlicingPm || 0)) / (monthlyPaymentGBP || 1) : null;
+
+  // Pay rate (monthly interest rate actually being paid)
+  const payRateMonthly = monthlyRatePct;
+
   return {
+    // Basic loan info
     gross,
     netLoanGBP,
-    ltv,
+    npb: netLoanGBP, // NPB = Net Proceeds to Borrower
+    grossLTV,
+    netLTV,
+    ltv: bucket,
+
+    // Rates
+    fullAnnualRate: fullAnnual * 100, // as percentage
+    fullRateMonthly: monthlyRatePct * 100, // as percentage
+    fullCouponRateMonthly: couponMonthly * 100, // as percentage
+    payRateMonthly: payRateMonthly * 100, // as percentage
     fullRateText: `${(fullAnnual * 100).toFixed(2)}%`,
+
+    // Fees
+    arrangementFeeGBP,
+    procFeePct,
+    procFeeGBP,
+    brokerFeeGBP,
+
+    // Interest breakdown
+    servicedMonths,
+    rolledInterestGBP,
+    rolledIntCoupon,
+    rolledIntBBR,
+    deferredGBP,
+    servicedInterestGBP,
+    totalInterest,
+
+    // Interest components for display
+    fullIntCoupon,
+    fullIntBBR,
+
+    // Payment
     monthlyPaymentGBP,
+
+    // APRC
+    aprcAnnual,
+    aprcMonthly,
+
+    // Other
     tier: tierName,
     icr,
-    arrangementFeeGBP,
-    rolledInterestGBP,
-    deferredGBP,
   };
 }

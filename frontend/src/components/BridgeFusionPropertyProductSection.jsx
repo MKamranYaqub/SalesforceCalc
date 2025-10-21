@@ -136,7 +136,7 @@ export function BridgeFusionPropertyProductSection({
               fontSize: 14,
             }}
           >
-            {subProductOptions && subProductOptions.map((opt) => (
+            {subProductOptions.map((opt) => (
               <option key={opt}>{opt}</option>
             ))}
           </select>

@@ -27,6 +27,8 @@ export function useBridgeFusionCalculator() {
   const [arrangementPct, setArrangementPct] = useState(0.02);
   const [deferredPct, setDeferredPct] = useState(0);
   const [rolledMonths, setRolledMonths] = useState(0);
+  const [procFeePct, setProcFeePct] = useState(0);
+  const [brokerFeeFlat, setBrokerFeeFlat] = useState(0);
 
   useEffect(() => {
     const pv = Number(propertyValue);
@@ -48,48 +50,32 @@ export function useBridgeFusionCalculator() {
       'Variable Bridge': 'bridge-var',
       'Fixed Bridge': 'bridge-fix',
     };
-    // Compute a row of results for each LTV bucket
-    const rows = LTV_BUCKETS.map((ltv) => {
-      const grossLTV = (pv * ltv) / 100;
-      const row = { ltv };
-      products.forEach((prod) => {
-        const calc = solveBridgeFusion({
-          kind: kindMap[prod],
-          grossLoanInput: grossLTV,
-          propertyValue: pv,
-          subProduct,
-          isCommercial: isComm,
-          bbrPct: bbr,
-          overrideMonthly: overrideRate ? Number(overrideRate) : 0,
-          rentPm: Number(rent),
-          topSlicingPm: topSlicing ? Number(rent) : 0,
-          arrangementPct,
-          deferredPct,
-          rolledMonths,
-        });
-        row[prod] = calc;
-      });
-      return row;
-    });
-    setResults(rows);
-    // Determine the best row for each product by highest net loan
-    const best = {};
+
+    // Calculate results for each product using the actual gross loan
+    const singleResult = {};
     products.forEach((prod) => {
-      let bestRow = null;
-      rows.forEach((row) => {
-        if (!bestRow || row[prod].netLoanGBP > bestRow[prod].netLoanGBP) {
-          bestRow = row;
-        }
+      const calc = solveBridgeFusion({
+        kind: kindMap[prod],
+        grossLoanInput: gross,
+        propertyValue: pv,
+        subProduct,
+        isCommercial: isComm,
+        bbrPct: bbr,
+        overrideMonthly: overrideRate ? Number(overrideRate) : 0,
+        rentPm: Number(rent),
+        topSlicingPm: topSlicing ? Number(rent) : 0,
+        arrangementPct,
+        deferredPct,
+        rolledMonths,
+        procFeePct,
+        brokerFeeFlat: Number(brokerFeeFlat),
       });
-      if (bestRow) {
-        best[prod] = {
-          ltv: bestRow.ltv,
-          ...bestRow[prod],
-        };
-      }
+      singleResult[prod] = calc;
     });
-    setBestResults(best);
-  }, [propertyValue, grossLoan, propertyType, subProduct, rent, topSlicing, bbr, overrideRate, arrangementPct, deferredPct, rolledMonths]);
+
+    setResults([singleResult]); // Array with single result object
+    setBestResults(singleResult); // Same as single result
+  }, [propertyValue, grossLoan, propertyType, subProduct, rent, topSlicing, bbr, overrideRate, arrangementPct, deferredPct, rolledMonths, procFeePct, brokerFeeFlat]);
   const subProductOptions =
     propertyType === 'Residential' ? BRIDGE_SUB_PRODUCTS_RESI : BRIDGE_SUB_PRODUCTS_COMM;
   return {
@@ -117,6 +103,10 @@ export function useBridgeFusionCalculator() {
     setDeferredPct,
     rolledMonths,
     setRolledMonths,
+    procFeePct,
+    setProcFeePct,
+    brokerFeeFlat,
+    setBrokerFeeFlat,
     // Outputs
     results,
     bestResults,

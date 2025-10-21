@@ -19,6 +19,10 @@ export function BridgeFusionFeesSection({
   setDeferredPct,
   rolledMonths,
   setRolledMonths,
+  procFeePct,
+  setProcFeePct,
+  brokerFeeFlat,
+  setBrokerFeeFlat,
 }) {
   const { errors, validateField } = useValidation();
 
@@ -46,6 +50,17 @@ export function BridgeFusionFeesSection({
     const numValue = parseInt(value, 10);
     setRolledMonths(!isNaN(numValue) ? numValue : 0);
     if (value) validateField('rolledMonths', value);
+  };
+
+  const handleProcFeePctChange = (value) => {
+    const numValue = parseFloat(value);
+    setProcFeePct(!isNaN(numValue) ? numValue : 0);
+    if (value) validateField('procFeePct', value);
+  };
+
+  const handleBrokerFeeFlatChange = (value) => {
+    setBrokerFeeFlat(value);
+    if (value) validateField('brokerFeeFlat', value);
   };
 
   return (
@@ -138,6 +153,56 @@ export function BridgeFusionFeesSection({
           />
           <ErrorMessage error={errors.rolledMonths} />
         </div>
+
+        {/* Proc Fee */}
+        <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 6 }}>
+            Proc Fee (%)
+          </label>
+          <input
+            type="number"
+            step="0.01"
+            value={procFeePct}
+            onChange={(e) => handleProcFeePctChange(e.target.value)}
+            onBlur={(e) => validateField('procFeePct', e.target.value)}
+            placeholder="e.g. 1.00"
+            style={{
+              width: "100%",
+              height: 36,
+              padding: "6px 10px",
+              border: errors.procFeePct ? "1px solid #ef4444" : "1px solid #cbd5e1",
+              borderRadius: 6,
+              background: "#fff",
+              fontSize: 14,
+            }}
+          />
+          <ErrorMessage error={errors.procFeePct} />
+        </div>
+
+        {/* Broker Fee */}
+        <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 6 }}>
+            Broker Client Fee (£)
+          </label>
+          <input
+            type="number"
+            step="1"
+            value={brokerFeeFlat}
+            onChange={(e) => handleBrokerFeeFlatChange(e.target.value)}
+            onBlur={(e) => validateField('brokerFeeFlat', e.target.value)}
+            placeholder="e.g. 995"
+            style={{
+              width: "100%",
+              height: 36,
+              padding: "6px 10px",
+              border: errors.brokerFeeFlat ? "1px solid #ef4444" : "1px solid #cbd5e1",
+              borderRadius: 6,
+              background: "#fff",
+              fontSize: 14,
+            }}
+          />
+          <ErrorMessage error={errors.brokerFeeFlat} />
+        </div>
       </div>
     </Collapsible>
   );
@@ -152,4 +217,8 @@ BridgeFusionFeesSection.propTypes = {
   setDeferredPct: PropTypes.func.isRequired,
   rolledMonths: PropTypes.number.isRequired,
   setRolledMonths: PropTypes.func.isRequired,
+  procFeePct: PropTypes.number.isRequired,
+  setProcFeePct: PropTypes.func.isRequired,
+  brokerFeeFlat: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  setBrokerFeeFlat: PropTypes.func.isRequired,
 };
