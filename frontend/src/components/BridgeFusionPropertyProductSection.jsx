@@ -5,7 +5,7 @@
  * The component accepts all relevant state and setter functions as
  * props (usually provided by useBridgeFusionCalculator).
  */
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { Collapsible } from './UI/Collapsible';
 import { CurrencyInput } from './UI/CurrencyInput';
@@ -32,16 +32,8 @@ export function BridgeFusionPropertyProductSection({
   setBbr,
   overrideRate,
   setOverrideRate,
-  calculatorId,
 }) {
   const { errors, validateField } = useValidation();
-
-  const headingLabel = (() => {
-    if (calculatorId === 'bridge') return '🏦 Property & Product (Bridge)';
-    if (calculatorId === 'fusion') return '🏦 Property & Product (Fusion)';
-    return '🏦 Property & Product (Bridge & Fusion)';
-  })();
-  const showFusionSpecificFields = calculatorId !== 'bridge';
 
   const handlePropertyValueChange = (value) => {
     setPropertyValue(value);
@@ -59,7 +51,11 @@ export function BridgeFusionPropertyProductSection({
   };
 
   return (
-    <Collapsible title={headingLabel} isOpen={isOpen} onToggle={onToggle}>
+    <Collapsible
+      title="🏦 Property & Product (Bridge & Fusion)"
+      isOpen={isOpen}
+      onToggle={onToggle}
+    >
       <div
         style={{
           display: 'grid',
@@ -147,42 +143,38 @@ export function BridgeFusionPropertyProductSection({
         </div>
 
         {/* Monthly Rent with Currency Formatting */}
-        {showFusionSpecificFields && (
-          <>
-            <div>
-              <CurrencyInput
-                label="Monthly Rent"
-                value={rent}
-                onChange={handleRentChange}
-                onBlur={(value) => validateField('monthlyRent', value)}
-                placeholder="e.g. 2,000"
-                error={!!errors.monthlyRent}
-                min={100}
-                max={50000}
-              />
-              <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4 }}>
-                (Only used for Fusion)
-              </div>
-              <ErrorMessage error={errors.monthlyRent} />
-            </div>
-            {/* Top Slicing */}
-            <div style={{ display: "flex", alignItems: "center", marginTop: 6 }}>
-              <input
-                type="checkbox"
-                id="topSlicing"
-                checked={topSlicing}
-                onChange={(e) => setTopSlicing(e.target.checked)}
-                style={{ marginRight: 6, height: 16, width: 16 }}
-              />
-              <label htmlFor="topSlicing" style={{ fontSize: 12, color: "#334155" }}>
-                Top Slicing?
-                <span style={{ display: "block", fontSize: 10, color: "#6b7280", marginTop: 2 }}>
-                  (Only used for Fusion)
-                </span>
-              </label>
-            </div>
-          </>
-        )}
+        <div>
+          <CurrencyInput
+            label="Monthly Rent"
+            value={rent}
+            onChange={handleRentChange}
+            onBlur={(value) => validateField('monthlyRent', value)}
+            placeholder="e.g. 2,000"
+            error={!!errors.monthlyRent}
+            min={100}
+            max={50000}
+          />
+          <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4 }}>
+            (Only used for Fusion)
+          </div>
+          <ErrorMessage error={errors.monthlyRent} />
+        </div>
+        {/* Top Slicing */}
+        <div style={{ display: "flex", alignItems: "center", marginTop: 6 }}>
+          <input
+            type="checkbox"
+            id="topSlicing"
+            checked={topSlicing}
+            onChange={(e) => setTopSlicing(e.target.checked)}
+            style={{ marginRight: 6, height: 16, width: 16 }}
+          />
+          <label htmlFor="topSlicing" style={{ fontSize: 12, color: "#334155" }}>
+            Top Slicing?
+            <span style={{ display: "block", fontSize: 10, color: "#6b7280", marginTop: 2 }}>
+              (Only used for Fusion)
+            </span>
+          </label>
+        </div>
 
         {/* Base Rate */}
         <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
@@ -250,13 +242,8 @@ BridgeFusionPropertyProductSection.propTypes = {
   setRent: PropTypes.func.isRequired,
   topSlicing: PropTypes.bool.isRequired,
   setTopSlicing: PropTypes.func.isRequired,
-  bbr: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  bbr: PropTypes.string.isRequired,
   setBbr: PropTypes.func.isRequired,
   overrideRate: PropTypes.string.isRequired,
   setOverrideRate: PropTypes.func.isRequired,
-  calculatorId: PropTypes.string,
-};
-
-BridgeFusionPropertyProductSection.defaultProps = {
-  calculatorId: undefined,
 };

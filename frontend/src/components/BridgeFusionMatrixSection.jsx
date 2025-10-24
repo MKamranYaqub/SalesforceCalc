@@ -35,22 +35,10 @@ const MATRIX_LABELS = [
   { key: "icr", label: "ICR" },
 ];
 
-export const BridgeFusionMatrixSection = ({ results, products, calculatorId }) => {
+export const BridgeFusionMatrixSection = ({ results }) => {
   if (!results || !results.Fusion) return null;
 
-  const productList = products && products.length
-    ? products
-    : ['Fusion', 'Variable Bridge', 'Fixed Bridge'];
-  const matrixTitle = (() => {
-    if (calculatorId === 'bridge') return '📊 Bridge Results Matrix';
-    if (calculatorId === 'fusion') return '📊 Fusion Results Matrix';
-    return '📊 Bridge & Fusion Results Matrix';
-  })();
-
-  const resolveProductData = (product) => {
-    if (!results) return null;
-    return results[product] || (product === 'Fusion Premier' ? results.Fusion : null);
-  };
+  const products = ['Fusion', 'Variable Bridge', 'Fixed Bridge'];
 
   const renderCellContent = (rowKey, productData) => {
     if (!productData) return '—';
@@ -145,7 +133,7 @@ export const BridgeFusionMatrixSection = ({ results, products, calculatorId }) =
       }}
     >
       <h4 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "16px" }}>
-        {matrixTitle}
+        📊 Bridge & Fusion Results Matrix
       </h4>
 
       <div style={{ overflowX: "auto" }}>
@@ -170,28 +158,25 @@ export const BridgeFusionMatrixSection = ({ results, products, calculatorId }) =
               >
                 Field
               </th>
-              {productList.map((product) => {
-                const productData = resolveProductData(product);
-                return (
-                  <th
-                    key={product}
-                    style={{
-                      border: "1px solid #cbd5e1",
-                      padding: "10px 12px",
-                      textAlign: "center",
-                      fontWeight: 600,
-                      color: "#0f172a",
-                      background: "#f1f5f9",
-                      minWidth: "150px",
-                    }}
-                  >
-                    {product}
-                    <div style={{ fontSize: "11px", fontWeight: 400, color: "#64748b", marginTop: "4px" }}>
-                      {productData?.ltv}% LTV
-                    </div>
-                  </th>
-                );
-              })}
+              {products.map((product) => (
+                <th
+                  key={product}
+                  style={{
+                    border: "1px solid #cbd5e1",
+                    padding: "10px 12px",
+                    textAlign: "center",
+                    fontWeight: 600,
+                    color: "#0f172a",
+                    background: "#f1f5f9",
+                    minWidth: "150px",
+                  }}
+                >
+                  {product}
+                  <div style={{ fontSize: "11px", fontWeight: 400, color: "#64748b", marginTop: "4px" }}>
+                    {results[product]?.ltv}% LTV
+                  </div>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -212,7 +197,7 @@ export const BridgeFusionMatrixSection = ({ results, products, calculatorId }) =
                 >
                   {row.label}
                 </td>
-                {productList.map((product) => (
+                {products.map((product) => (
                   <td
                     key={product}
                     style={{
@@ -223,7 +208,7 @@ export const BridgeFusionMatrixSection = ({ results, products, calculatorId }) =
                       color: "#0f172a",
                     }}
                   >
-                    {renderCellContent(row.key, resolveProductData(product))}
+                    {renderCellContent(row.key, results[product])}
                   </td>
                 ))}
               </tr>
@@ -252,11 +237,4 @@ export const BridgeFusionMatrixSection = ({ results, products, calculatorId }) =
 
 BridgeFusionMatrixSection.propTypes = {
   results: PropTypes.object,
-  products: PropTypes.arrayOf(PropTypes.string),
-  calculatorId: PropTypes.string,
-};
-
-BridgeFusionMatrixSection.defaultProps = {
-  products: undefined,
-  calculatorId: undefined,
 };

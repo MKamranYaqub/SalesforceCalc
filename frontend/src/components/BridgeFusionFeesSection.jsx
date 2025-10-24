@@ -23,16 +23,8 @@ export function BridgeFusionFeesSection({
   setProcFeePct,
   brokerFeeFlat,
   setBrokerFeeFlat,
-  calculatorId,
 }) {
   const { errors, validateField } = useValidation();
-
-  const headingLabel = (() => {
-    if (calculatorId === 'bridge') return '💰 Fees (Bridge)';
-    if (calculatorId === 'fusion') return '💰 Fees (Fusion)';
-    return '💰 Fees (Bridge & Fusion)';
-  })();
-  const showFusionSpecificInputs = calculatorId !== 'bridge';
 
   const handleArrangementPctChange = (value) => {
     const numValue = parseFloat(value);
@@ -72,7 +64,11 @@ export function BridgeFusionFeesSection({
   };
 
   return (
-    <Collapsible title={headingLabel} isOpen={isOpen} onToggle={onToggle}>
+    <Collapsible
+      title="💰 Fees (Bridge & Fusion)"
+      isOpen={isOpen}
+      onToggle={onToggle}
+    >
       <div
         style={{
           display: "grid",
@@ -105,34 +101,33 @@ export function BridgeFusionFeesSection({
           <ErrorMessage error={errors.arrangementPct} />
         </div>
 
-        {showFusionSpecificInputs && (
-          <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 6 }}>
-              Deferred Interest (%)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={(deferredPct * 100).toFixed(2)}
-              onChange={(e) => handleDeferredPctChange(e.target.value)}
-              onBlur={(e) => validateField('deferredPct', e.target.value)}
-              placeholder="e.g. 1.00"
-              style={{
-                width: "100%",
-                height: 36,
-                padding: "6px 10px",
-                border: errors.deferredPct ? "1px solid #ef4444" : "1px solid #cbd5e1",
-                borderRadius: 6,
-                background: "#fff",
-                fontSize: 14,
-              }}
-            />
-            <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4 }}>
-              (Only applies to Fusion)
-            </div>
-            <ErrorMessage error={errors.deferredPct} />
+        {/* Deferred Interest */}
+        <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 6 }}>
+            Deferred Interest (%)
+          </label>
+          <input
+            type="number"
+            step="0.01"
+            value={(deferredPct * 100).toFixed(2)}
+            onChange={(e) => handleDeferredPctChange(e.target.value)}
+            onBlur={(e) => validateField('deferredPct', e.target.value)}
+            placeholder="e.g. 1.00"
+            style={{
+              width: "100%",
+              height: 36,
+              padding: "6px 10px",
+              border: errors.deferredPct ? "1px solid #ef4444" : "1px solid #cbd5e1",
+              borderRadius: 6,
+              background: "#fff",
+              fontSize: 14,
+            }}
+          />
+          <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4 }}>
+            (Only applies to Fusion)
           </div>
-        )}
+          <ErrorMessage error={errors.deferredPct} />
+        </div>
 
         {/* Rolled Months */}
         <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
@@ -226,9 +221,4 @@ BridgeFusionFeesSection.propTypes = {
   setProcFeePct: PropTypes.func.isRequired,
   brokerFeeFlat: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   setBrokerFeeFlat: PropTypes.func.isRequired,
-  calculatorId: PropTypes.string,
-};
-
-BridgeFusionFeesSection.defaultProps = {
-  calculatorId: undefined,
 };

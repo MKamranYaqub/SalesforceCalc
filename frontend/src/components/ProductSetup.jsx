@@ -8,26 +8,14 @@ import { SectionTitle } from './UI/SectionTitle';
 export const ProductSetup = ({
   mainProductType,
   setMainProductType,
-  productTypeOptions,
   propertyType,
   setPropertyType,
-  propertyTypeOptions,
   isRetention,
   setIsRetention,
   retentionLtv,
   setRetentionLtv,
   tier,
-  allowRetention,
 }) => {
-  const productOptions = productTypeOptions && productTypeOptions.length
-    ? productTypeOptions
-    : ['BTL', 'Bridge & Fusion'];
-  const propertyOptions = propertyTypeOptions && propertyTypeOptions.length
-    ? propertyTypeOptions
-    : ['Residential', 'Commercial', 'Semi-Commercial'];
-  const disableProductSelection = productOptions.length <= 1;
-  const disablePropertySelection = propertyOptions.length <= 1;
-
   return (
     <div style={{
       gridColumn: "1 / -1",
@@ -74,14 +62,10 @@ export const ProductSetup = ({
               background: "#fff",
               fontSize: 14,
             }}
-            disabled={disableProductSelection}
           >
-            {productOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+            <option value="BTL">BTL</option>
+            <option value="Bridge">Bridge & Fusion</option>
+            </select>
         </div>
 
         {/* Property Type Dropdown */}
@@ -101,41 +85,38 @@ export const ProductSetup = ({
               background: "#fff",
               fontSize: 14,
             }}
-            disabled={disablePropertySelection}
           >
-            {propertyOptions.map((option) => (
-              <option key={option}>{option}</option>
-            ))}
+            <option>Residential</option>
+            <option>Commercial</option>
+            <option>Semi-Commercial</option>
           </select>
         </div>
 
         {/* Is Retention Dropdown */}
-        {allowRetention && (
-          <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 6 }}>
-              Is This a Retention loan?
-            </label>
-            <select
-              value={isRetention}
-              onChange={(e) => setIsRetention(e.target.value)}
-              style={{
-                width: "100%",
-                height: 36,
-                padding: "6px 10px",
-                border: "1px solid #cbd5e1",
-                borderRadius: 6,
-                background: "#fff",
-                fontSize: 14,
-              }}
-            >
-              <option>No</option>
-              <option>Yes</option>
-            </select>
-          </div>
-        )}
+        <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 6 }}>
+            Is This a Retention loan?
+          </label>
+          <select
+            value={isRetention}
+            onChange={(e) => setIsRetention(e.target.value)}
+            style={{
+              width: "100%",
+              height: 36,
+              padding: "6px 10px",
+              border: "1px solid #cbd5e1",
+              borderRadius: 6,
+              background: "#fff",
+              fontSize: 14,
+            }}
+          >
+            <option>No</option>
+            <option>Yes</option>
+          </select>
+        </div>
 
         {/* Retention LTV Range (conditionally shown) */}
-        {allowRetention && isRetention === "Yes" && (
+        {isRetention === "Yes" && (
           <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 6 }}>
               Retention LTV Range
@@ -166,20 +147,11 @@ export const ProductSetup = ({
 ProductSetup.propTypes = {
   mainProductType: PropTypes.string.isRequired,
   setMainProductType: PropTypes.func.isRequired,
-  productTypeOptions: PropTypes.arrayOf(PropTypes.string),
   propertyType: PropTypes.string.isRequired,
   setPropertyType: PropTypes.func.isRequired,
-  propertyTypeOptions: PropTypes.arrayOf(PropTypes.string),
   isRetention: PropTypes.string.isRequired,
   setIsRetention: PropTypes.func.isRequired,
   retentionLtv: PropTypes.string.isRequired,
   setRetentionLtv: PropTypes.func.isRequired,
   tier: PropTypes.string.isRequired,
-  allowRetention: PropTypes.bool,
-};
-
-ProductSetup.defaultProps = {
-  productTypeOptions: ['BTL', 'Bridge & Fusion'],
-  propertyTypeOptions: ['Residential', 'Commercial', 'Semi-Commercial'],
-  allowRetention: true,
 };
