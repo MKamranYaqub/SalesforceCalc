@@ -44,7 +44,9 @@ const CALCULATOR_TABS = [
     productOptions: ['BTL'],
     propertyTypeOptions: [PROPERTY_TYPES.RESIDENTIAL],
     allowRetention: true,
+
     description: 'Standard residential buy-to-let lending.',
+
   },
   {
     id: 'btl-commercial',
@@ -53,21 +55,27 @@ const CALCULATOR_TABS = [
     productOptions: ['BTL'],
     propertyTypeOptions: [PROPERTY_TYPES.COMMERCIAL, PROPERTY_TYPES.SEMI_COMMERCIAL],
     allowRetention: true,
+
     description: 'For commercial units and mixed-use properties.',
+
   },
   {
     id: 'bridge',
     label: 'Bridge (Variable & Fix)',
     mainProductType: 'Bridge',
     productOptions: ['Bridge'],
+
     description: 'Short-term bridge finance – variable and fixed.',
+
   },
   {
     id: 'fusion',
     label: 'Fusion & Fusion Premier',
     mainProductType: 'Fusion',
     productOptions: ['Fusion'],
+
     description: 'Fusion portfolio and Premier propositions.',
+
   },
 ];
 
@@ -190,11 +198,13 @@ function App() {
       setMainProductType(currentCalculator.mainProductType);
     }
 
+
     if (currentCalculator.productOptions?.length) {
       if (!currentCalculator.productOptions.includes(productType)) {
         setProductType(currentCalculator.productOptions[0]);
       }
     }
+
 
     if (currentCalculator.propertyTypeOptions?.length) {
       if (!currentCalculator.propertyTypeOptions.includes(propertyType)) {
@@ -205,6 +215,7 @@ function App() {
     if (currentCalculator.allowRetention === false && isRetention !== 'No') {
       setIsRetention('No');
     }
+
   }, [
     currentCalculator,
     mainProductType,
@@ -216,6 +227,9 @@ function App() {
     setIsRetention,
     setProductType,
   ]);
+
+  }, [currentCalculator, mainProductType, propertyType, isRetention, setMainProductType, setPropertyType, setIsRetention]);
+
 
   // Bridge & Fusion state and results.  Always call the hook so that
   // React's rules of hooks are respected.  The values will only be used
@@ -812,6 +826,51 @@ function App() {
           For Bridge or Fusion selections, we show the Bridge & Fusion inputs instead.
         */}
         <div className="app-container">
+          <div
+            style={{
+              gridColumn: '1 / -1',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '12px',
+              marginBottom: '16px',
+            }}
+          >
+            {CALCULATOR_TABS.map((tab) => {
+              const isActive = tab.id === activeCalculator;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveCalculator(tab.id)}
+                  style={{
+                    padding: '10px 18px',
+                    borderRadius: '999px',
+                    border: `1px solid ${isActive ? '#008891' : '#cbd5e1'}`,
+                    background: isActive ? '#008891' : '#ffffff',
+                    color: isActive ? '#ffffff' : '#1f2937',
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    boxShadow: isActive ? '0 2px 6px rgba(0, 136, 145, 0.25)' : 'none',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseOver={(e) => {
+                    if (!isActive) {
+                      e.target.style.background = '#f8fafc';
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (!isActive) {
+                      e.target.style.background = '#ffffff';
+                    }
+                  }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
           {/* Case Lookup Section */}
           <CaseLookup onCaseLoaded={handleCaseLoaded} />
 
