@@ -228,9 +228,6 @@ function App() {
     setProductType,
   ]);
 
-  }, [currentCalculator, mainProductType, propertyType, isRetention, setMainProductType, setPropertyType, setIsRetention]);
-
-
   // Bridge & Fusion state and results.  Always call the hook so that
   // React's rules of hooks are respected.  The values will only be used
   // when the main product type is Bridge or Fusion.
