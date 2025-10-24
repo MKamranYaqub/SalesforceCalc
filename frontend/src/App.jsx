@@ -18,6 +18,7 @@ import { ProductGroupToggle } from './components/ProductGroupToggle';
 import { EmailResultsModal } from './components/EmailResultsModal';
 import { SaveCalculationButton } from './components/SaveCalculationButton';
 import { CaseLookup } from './components/CaseLookup';
+import { CalculatorTabs } from './components/CalculatorTabs';
 // Import Bridge & Fusion hooks and components for the alternative calculator.
 import { useBridgeFusionCalculator } from './hooks/useBridgeFusionCalculator';
 import { BridgeFusionPropertyProductSection } from './components/BridgeFusionPropertyProductSection';
@@ -35,15 +36,50 @@ import {
 } from './config/constants';
 import './styles/styles.css';
 
+const CALCULATOR_TABS = [
+  {
+    id: 'btl-residential',
+    label: 'BTL Residential',
+    mainProductType: 'BTL',
+    productOptions: ['BTL'],
+    propertyTypeOptions: [PROPERTY_TYPES.RESIDENTIAL],
+    allowRetention: true,
+    description: 'Standard residential buy-to-let lending.',
+  },
+  {
+    id: 'btl-commercial',
+    label: 'BTL Commercial & Semi-Commercial',
+    mainProductType: 'BTL',
+    productOptions: ['BTL'],
+    propertyTypeOptions: [PROPERTY_TYPES.COMMERCIAL, PROPERTY_TYPES.SEMI_COMMERCIAL],
+    allowRetention: true,
+    description: 'For commercial units and mixed-use properties.',
+  },
+  {
+    id: 'bridge',
+    label: 'Bridge (Variable & Fix)',
+    mainProductType: 'Bridge',
+    productOptions: ['Bridge'],
+    description: 'Short-term bridge finance – variable and fixed.',
+  },
+  {
+    id: 'fusion',
+    label: 'Fusion & Fusion Premier',
+    mainProductType: 'Fusion',
+    productOptions: ['Fusion'],
+    description: 'Fusion portfolio and Premier propositions.',
+  },
+];
+
 function App() {
   // ============================================
   // CALCULATOR NAVIGATION STATE
   // ============================================
-  // NOTE: We no longer use a separate activeCalculator state. Instead, we
-  // determine which UI to render based on mainProductType directly. This
-  // ensures that selecting Bridge or Fusion updates the criteria and inputs
-  // without navigating away to a completely different calculator view.
-  const [activeCalculator, setActiveCalculator] = useState('btl');
+  const [activeCalculator, setActiveCalculator] = useState('btl-residential');
+  const currentCalculator = useMemo(
+    () => CALCULATOR_TABS.find((tab) => tab.id === activeCalculator) || CALCULATOR_TABS[0],
+    [activeCalculator],
+  );
 
   // ============================================
   // 1. ALL HOOKS MUST BE CALLED FIRST (before any conditional returns)
@@ -146,10 +182,55 @@ function App() {
   // Determine if the current product selection requires the Bridge & Fusion calculator.
   const isBridgeFusion = ['Bridge', 'Fusion', 'Bridge & Fusion'].includes(mainProductType);
 
+  // Keep dependent dropdowns aligned with the active calculator tab.
+  useEffect(() => {
+    if (!currentCalculator) return;
+
+    if (mainProductType !== currentCalculator.mainProductType) {
+      setMainProductType(currentCalculator.mainProductType);
+    }
+
+    if (currentCalculator.productOptions?.length) {
+      if (!currentCalculator.productOptions.includes(productType)) {
+        setProductType(currentCalculator.productOptions[0]);
+      }
+    }
+
+    if (currentCalculator.propertyTypeOptions?.length) {
+      if (!currentCalculator.propertyTypeOptions.includes(propertyType)) {
+        setPropertyType(currentCalculator.propertyTypeOptions[0]);
+      }
+    }
+
+    if (currentCalculator.allowRetention === false && isRetention !== 'No') {
+      setIsRetention('No');
+    }
+  }, [
+    currentCalculator,
+    mainProductType,
+    propertyType,
+    isRetention,
+    productType,
+    setMainProductType,
+    setPropertyType,
+    setIsRetention,
+    setProductType,
+  ]);
+
   // Bridge & Fusion state and results.  Always call the hook so that
   // React's rules of hooks are respected.  The values will only be used
   // when the main product type is Bridge or Fusion.
   const bridgeFusion = useBridgeFusionCalculator();
+
+  const bridgeProducts = useMemo(() => {
+    if (activeCalculator === 'bridge') {
+      return ['Variable Bridge', 'Fixed Bridge'];
+    }
+    if (activeCalculator === 'fusion') {
+      return ['Fusion', 'Fusion Premier'];
+    }
+    return ['Fusion', 'Variable Bridge', 'Fixed Bridge'];
+  }, [activeCalculator]);
 
   // Compute bridge-specific summary data for saving and emailing.  When
   // bridgeFusion.bestResults has entries, build an array of per-product
@@ -159,34 +240,34 @@ function App() {
   // recalculating on every render.
   const bridgeAllColumnData = useMemo(() => {
     const best = bridgeFusion.bestResults || {};
-    const products = ['Fusion', 'Variable Bridge', 'Fixed Bridge'];
-    return products.map((p) => {
-      const r = best[p];
+    return bridgeProducts.map((p) => {
+      const result = best[p] || (p === 'Fusion Premier' ? best.Fusion : undefined);
       return {
         productName: p,
         colKey: p,
-        ltv: r ? r.ltv / 100 : null,
-        gross: r ? r.gross : null,
-        net: r ? r.netLoanGBP : null,
-        fullRateText: r ? r.fullRateText : null,
-        icr: r ? r.icr : null,
-        tier: r ? r.tier : null,
-        monthlyPayment: r ? r.monthlyPaymentGBP : null,
+        ltv: result ? result.ltv / 100 : null,
+        gross: result ? result.gross : null,
+        net: result ? result.netLoanGBP : null,
+        fullRateText: result ? result.fullRateText : null,
+        icr: result ? result.icr : null,
+        tier: result ? result.tier : null,
+        monthlyPayment: result ? result.monthlyPaymentGBP : null,
       };
     });
-  }, [bridgeFusion.bestResults]);
+  }, [bridgeFusion.bestResults, bridgeProducts]);
   const bridgeBestSummary = useMemo(() => {
     const best = bridgeFusion.bestResults || {};
     let bestProd = null;
     let maxNet = -Infinity;
-    Object.entries(best).forEach(([p, r]) => {
+    bridgeProducts.forEach((p) => {
+      const r = best[p] || (p === 'Fusion Premier' ? best.Fusion : null);
       if (r && r.netLoanGBP > maxNet) {
         maxNet = r.netLoanGBP;
         bestProd = { productName: p, net: r.netLoanGBP, gross: r.gross, colKey: p };
       }
     });
     return bestProd;
-  }, [bridgeFusion.bestResults]);
+  }, [bridgeFusion.bestResults, bridgeProducts]);
   const bridgeCalculationData = useMemo(() => {
     return {
       propertyValue: parseNumber(bridgeFusion.propertyValue),
@@ -707,6 +788,25 @@ function App() {
 
       {/* Calculator Content */}
       <main>
+        <div className="calculator-tabs-wrapper">
+          <div className="calculator-tabs-card">
+            <div className="calculator-tabs-title">Choose a calculator</div>
+            <p className="calculator-tabs-caption">
+              Switch between Residential, Commercial, Bridge, and Fusion journeys. Your selection updates the
+              fields and results below automatically.
+            </p>
+            <CalculatorTabs
+              tabs={CALCULATOR_TABS}
+              activeId={activeCalculator}
+              onChange={setActiveCalculator}
+            />
+            <div className="calculator-tabs-active">
+              <span>Currently viewing:</span>
+              <strong>{currentCalculator.label}</strong>
+            </div>
+          </div>
+        </div>
+
         {/*
           Render the standard BTL calculator when the main product type is BTL.
           For Bridge or Fusion selections, we show the Bridge & Fusion inputs instead.
@@ -759,17 +859,22 @@ function App() {
             </div>
           )}
 
-          <ProductSetup
-            mainProductType={mainProductType}
-            setMainProductType={setMainProductType}
-            propertyType={propertyType}
-            setPropertyType={setPropertyType}
-            isRetention={isRetention}
-            setIsRetention={setIsRetention}
-            retentionLtv={retentionLtv}
-            setRetentionLtv={setRetentionLtv}
-            tier={tier}
-          />
+          {!isBridgeFusion && (
+            <ProductSetup
+              mainProductType={mainProductType}
+              setMainProductType={setMainProductType}
+              productTypeOptions={currentCalculator.productOptions}
+              propertyType={propertyType}
+              setPropertyType={setPropertyType}
+              propertyTypeOptions={currentCalculator.propertyTypeOptions}
+              isRetention={isRetention}
+              setIsRetention={setIsRetention}
+              retentionLtv={retentionLtv}
+              setRetentionLtv={setRetentionLtv}
+              allowRetention={currentCalculator.allowRetention !== false}
+              tier={tier}
+            />
+          )}
 
           <CriteriaSection
             isOpen={openSections.criteria}
@@ -811,6 +916,7 @@ function App() {
                 setBbr={bridgeFusion.setBbr}
                 overrideRate={bridgeFusion.overrideRate}
                 setOverrideRate={bridgeFusion.setOverrideRate}
+                calculatorId={activeCalculator}
               />
 
               <BridgeFusionFeesSection
@@ -826,9 +932,14 @@ function App() {
                 setProcFeePct={bridgeFusion.setProcFeePct}
                 brokerFeeFlat={bridgeFusion.brokerFeeFlat}
                 setBrokerFeeFlat={bridgeFusion.setBrokerFeeFlat}
+                calculatorId={activeCalculator}
               />
 
-              <BridgeFusionMatrixSection results={bridgeFusion.bestResults} />
+              <BridgeFusionMatrixSection
+                results={bridgeFusion.bestResults}
+                products={bridgeProducts}
+                calculatorId={activeCalculator}
+              />
 
               {/* Action Buttons for Bridge & Fusion */}
               {bridgeFusion.results &&
