@@ -25,7 +25,104 @@ body {
   gap: 24px;
   padding: 24px;
   max-width: 1200px;
+  margin: 24px auto 0;
+}
+
+.calculator-tabs-wrapper {
+  max-width: 1200px;
   margin: 0 auto;
+  padding: 24px 24px 0;
+}
+
+.calculator-tabs-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.08);
+}
+
+.calculator-tabs-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.calculator-tabs-caption {
+  margin: 0;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.calculator-tabs {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-top: 20px;
+}
+
+.calculator-tab {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  text-align: left;
+  background: #f8fafc;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease,
+    background 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 96px;
+}
+
+.calculator-tab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(2, 132, 199, 0.18);
+  border-color: #38bdf8;
+}
+
+.calculator-tab__label {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.calculator-tab__description {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.calculator-tab--active {
+  background: linear-gradient(135deg, #008891, #00a2a6);
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: 0 16px 32px rgba(0, 136, 145, 0.35);
+}
+
+.calculator-tab--active .calculator-tab__description {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.calculator-tabs-active {
+  margin-top: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ecfeff;
+  color: #0f172a;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #bae6fd;
+  width: fit-content;
+}
+
+.calculator-tabs-active strong {
+  font-size: 14px;
 }
 
 .card {
