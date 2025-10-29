@@ -437,7 +437,7 @@ export const CORE_CRITERIA_CONFIG = {
     propertyQuestions: [
       {
         key: "hmo",
-        label: "HMO",
+        label: "HMOTest",
         options: [
           { label: "No (Tier 1)", tier: 1 },
           { label: "Up to 6 beds (Tier 2)", tier: 2 },
