@@ -1,4 +1,5 @@
 import { fetchRates, fetchLoanLimits, fetchTermMonths, transformRatesForApp } from '../services/rateService.js';
+import { upsertRates as svcUpsertRates, updateRate as svcUpdateRate, fetchRates as svcFetchRates } from '../services/rateService.js';
 
 /**
  * Get all configuration data at once
@@ -54,5 +55,49 @@ export const getConfiguration = async (req, res) => {
       message: 'Failed to fetch configuration',
       error: error.message
     });
+  }
+};
+
+export const listRates = async (req, res) => {
+  try {
+    const rates = await svcFetchRates();
+    res.json({ success: true, data: rates });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to list rates', error: err.message });
+  }
+};
+
+export const upsertRates = async (req, res) => {
+  try {
+    const rows = req.body;
+    if (!Array.isArray(rows)) return res.status(400).json({ success: false, message: 'Expected array of rate rows' });
+    const result = await svcUpsertRates(rows);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to upsert rates', error: err.message });
+  }
+};
+
+export const updateRate = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const patch = req.body;
+    const result = await svcUpdateRate(id, patch);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to update rate', error: err.message });
+  }
+};
+
+export const deleteRate = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const result = await svcUpdateRate ? await svcUpdateRate(id, {}) : null; // noop to ensure svc exists
+    // call delete service
+    const { deleteRate: del } = await import('../services/rateService.js');
+    const data = await del(id);
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to delete rate', error: err.message });
   }
 };

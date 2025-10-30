@@ -109,3 +109,40 @@ export const transformRatesForApp = (rates) => {
 
   return transformed;
 };
+
+/**
+ * Upsert rate rows into the rates table.
+ * Expects an array of row objects matching the `rates` table columns.
+ */
+export const upsertRates = async (rows) => {
+  const { data, error } = await supabase.from('rates').upsert(rows, { returning: 'representation' });
+  if (error) {
+    console.error('Error upserting rates:', error);
+    throw error;
+  }
+  return data;
+};
+
+/**
+ * Update a single rate row by id with a patch object.
+ */
+export const updateRate = async (id, patch) => {
+  const { data, error } = await supabase.from('rates').update(patch).eq('id', id).select();
+  if (error) {
+    console.error('Error updating rate:', error);
+    throw error;
+  }
+  return data;
+};
+
+/**
+ * Delete a rate row by id.
+ */
+export const deleteRate = async (id) => {
+  const { data, error } = await supabase.from('rates').delete().eq('id', id).select();
+  if (error) {
+    console.error('Error deleting rate:', error);
+    throw error;
+  }
+  return data;
+};

@@ -2,16 +2,7 @@
  * Rate selection logic based on product parameters
  */
 import { PROPERTY_TYPES, PRODUCT_GROUPS, CORE_FLOOR_RATE, FEE_COLUMNS } from '../config/constants';
-import {
-  RATES_DATA,
-  RATES_COMMERCIAL,
-  RATES_SEMI_COMMERCIAL,
-  RATES_CORE,
-  RATES_RETENTION_65,
-  RATES_RETENTION_75,
-  RATES_CORE_RETENTION_65,
-  RATES_CORE_RETENTION_75,
-} from '../config/rates';
+import { ratesStore } from '../services/ratesService';
 import { MAX_LTV_RULES } from '../config/criteria';
 
 /**
@@ -54,18 +45,18 @@ export const selectRateSource = (params) => {
   if (productGroup === PRODUCT_GROUPS.CORE && propertyType === PROPERTY_TYPES.RESIDENTIAL) {
     if (isRetention === "Yes") {
       const coreRetRates = retentionLtv === "65" 
-        ? RATES_CORE_RETENTION_65 
-        : RATES_CORE_RETENTION_75;
+        ? ratesStore.RATES_CORE_RETENTION_65 
+        : ratesStore.RATES_CORE_RETENTION_75;
       return coreRetRates?.[tier]?.products?.[productType];
     }
-    return RATES_CORE?.[tier]?.products?.[productType];
+    return ratesStore.RATES_CORE?.[tier]?.products?.[productType];
   }
 
   // Retention products
   if (isRetention === "Yes") {
     const retentionRates = retentionLtv === "65" 
-      ? RATES_RETENTION_65 
-      : RATES_RETENTION_75;
+      ? ratesStore.RATES_RETENTION_65 
+      : ratesStore.RATES_RETENTION_75;
     
     if (propertyType === PROPERTY_TYPES.RESIDENTIAL) {
       return retentionRates?.Residential?.[tier]?.products?.[productType];
@@ -78,12 +69,12 @@ export const selectRateSource = (params) => {
 
   // Standard products
   if (isSemiCommercial) {
-    return RATES_SEMI_COMMERCIAL?.[tier]?.products?.[productType];
+    return ratesStore.RATES_SEMI_COMMERCIAL?.[tier]?.products?.[productType];
   }
   
   return isCommercial
-    ? RATES_COMMERCIAL?.[tier]?.products?.[productType]
-    : RATES_DATA?.[tier]?.products?.[productType];
+  ? ratesStore.RATES_COMMERCIAL?.[tier]?.products?.[productType]
+  : ratesStore.RATES_DATA?.[tier]?.products?.[productType];
 };
 
 /**

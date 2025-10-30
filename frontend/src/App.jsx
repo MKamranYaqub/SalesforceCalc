@@ -7,6 +7,9 @@ import { useCriteriaManagement } from './hooks/useCriteriaManagement';
 import { useLoanInputs } from './hooks/useLoanInputs';
 import { useFeeManagement } from './hooks/useFeeManagement';
 import { useDynamicCriteria } from './hooks/useDynamicCriteria';
+import { loadRatesFromSupabase } from './services/ratesService';
+import RatesDebugPanel from './components/RatesDebugPanel';
+import RatesAdmin from './components/RatesAdmin';
 import { ProductSetup } from './components/ProductSetup';
 import { CriteriaSection } from './components/CriteriaSection';
 import { PropertyProductSection } from './components/PropertyProductSection';
@@ -59,6 +62,8 @@ function App() {
   } = useDynamicCriteria();
 
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [ratesSource, setRatesSource] = useState('Local');
+  const [showRatesAdmin, setShowRatesAdmin] = useState(false);
   const [userAccessLevel] = useState('web_customer');
   const [loadedCaseReference, setLoadedCaseReference] = useState(null);
 
@@ -387,6 +392,25 @@ function App() {
     }
   }, [isWithinCoreCriteria, productGroup, setProductGroup]);
 
+  // Load rates from Supabase (if available) on app startup. This will merge
+  // any DB-provided rate tables into the runtime ratesStore used by the
+  // selectors. We call it once and ignore failures (local config remains).
+  useEffect(() => {
+    loadRatesFromSupabase()
+      .then((loaded) => {
+        if (loaded) {
+          console.info('✅ Rates loaded from Supabase');
+          setRatesSource('Supabase');
+        } else {
+          setRatesSource('Local');
+        }
+      })
+      .catch((err) => {
+        console.warn('⚠️ Failed to load rates from Supabase:', err);
+        setRatesSource('Local');
+      });
+  }, []);
+
   // We no longer switch calculators based on main product type. Instead, we
   // conditionally render the Bridge & Fusion inputs below based on
   // mainProductType directly in the JSX.
@@ -703,10 +727,37 @@ function App() {
         }}
       >
         {/* Header content could go here if needed */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 16px', gap: 12, alignItems: 'center' }}>
+          <RatesDebugPanel />
+          <div
+            style={{
+              fontSize: '12px',
+              color: ratesSource === 'Supabase' ? '#065f46' : '#374151',
+              background: ratesSource === 'Supabase' ? '#ecfcf7' : 'transparent',
+              border: ratesSource === 'Supabase' ? '1px solid #bbf7d0' : '1px solid transparent',
+              padding: '6px 10px',
+              borderRadius: '6px',
+              fontWeight: 600,
+            }}
+          >
+            Rates: {ratesSource}
+          </div>
+          <button
+            onClick={() => setShowRatesAdmin((s) => !s)}
+            style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer' }}
+          >
+            {showRatesAdmin ? 'Close Admin' : 'Show Rates Admin'}
+          </button>
+        </div>
       </header>
 
       {/* Calculator Content */}
       <main>
+        {showRatesAdmin && (
+          <div style={{ padding: 12 }}>
+            <RatesAdmin />
+          </div>
+        )}
         {/*
           Render the standard BTL calculator when the main product type is BTL.
           For Bridge or Fusion selections, we show the Bridge & Fusion inputs instead.
